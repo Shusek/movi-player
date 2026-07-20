@@ -37,24 +37,70 @@ function brotliSize(bytes) {
 const enginePath = resolve(dist, "engine.js");
 const wasmPath = resolve(dist, "wasm", "movi.wasm");
 const engine = await readFile(enginePath);
-const engineText = engine.toString("utf8");
 const allFiles = await filesBelow(dist);
 const chunks = allFiles.filter((path) =>
   relative(dist, path).startsWith(`chunks/`),
 );
 const chunkNames = chunks.map((path) => relative(dist, path));
 
-if (!/\bimport\(/u.test(engineText)) {
-  throw new Error("Bundle check failed: engine.js has no lazy imports");
+function staticModuleSpecifiers(source) {
+  const result = new Set();
+  const fromPattern =
+    /\b(?:import|export)(?!\s*\()\s*[^"'`;]*?\bfrom\s*["']([^"']+)["']/gu;
+  for (const match of source.matchAll(fromPattern)) {
+    if (match[1]?.startsWith(".")) result.add(match[1]);
+  }
+  const sideEffectPattern = /\bimport\s*["']([^"']+)["']/gu;
+  for (const match of source.matchAll(sideEffectPattern)) {
+    if (match[1]?.startsWith(".")) result.add(match[1]);
+  }
+  return [...result];
 }
-if (engineText.includes("shaka.Player")) {
-  throw new Error("Bundle check failed: Shaka was inlined into engine.js");
+
+async function initialModuleGraph(entryPath) {
+  const pending = [entryPath];
+  const visited = new Set();
+  const modules = [];
+  while (pending.length > 0) {
+    const path = pending.pop();
+    if (!path || visited.has(path)) continue;
+    visited.add(path);
+    const bytes = await readFile(path);
+    const source = bytes.toString("utf8");
+    modules.push({ path, bytes, source });
+    for (const specifier of staticModuleSpecifiers(source)) {
+      const dependency = resolve(path, "..", specifier);
+      if (!dependency.startsWith(`${dist}/`)) {
+        throw new Error(
+          `Bundle check failed: engine static import escaped dist: ${specifier}`,
+        );
+      }
+      pending.push(dependency);
+    }
+  }
+  return modules;
 }
-if (engineText.includes("Hls.Events")) {
-  throw new Error("Bundle check failed: hls.js was inlined into engine.js");
+
+const engineGraph = await initialModuleGraph(enginePath);
+const engineGraphText = engineGraph
+  .map(({ source }) => source)
+  .join("\n");
+
+if (!/\bimport\(/u.test(engineGraphText)) {
+  throw new Error(
+    "Bundle check failed: the engine initial module graph has no lazy imports",
+  );
 }
-if (engineText.includes("MediaPlayer().create")) {
-  throw new Error("Bundle check failed: dash.js was inlined into engine.js");
+for (const [marker, dependency] of [
+  ["shaka.Player", "Shaka"],
+  ["Hls.Events", "hls.js"],
+  ["MediaPlayer().create", "dash.js"],
+]) {
+  if (engineGraphText.includes(marker)) {
+    throw new Error(
+      `Bundle check failed: ${dependency} was inlined into the engine initial graph`,
+    );
+  }
 }
 if (chunks.length < 4) {
   throw new Error(
@@ -77,6 +123,14 @@ for (const name of ["engine.js", "engine.cjs", "player.js", "element.js"]) {
     brotliBytes: brotliSize(bytes),
   };
 }
+entries["engine.js"].initialGraph = {
+  files: engineGraph.map(({ path }) => relative(dist, path)),
+  bytes: engineGraph.reduce((total, module) => total + module.bytes.byteLength, 0),
+  brotliBytes: engineGraph.reduce(
+    (total, module) => total + brotliSize(module.bytes),
+    0,
+  ),
+};
 const report = {
   generatedAt: new Date().toISOString(),
   entries,
