@@ -20,6 +20,8 @@ import type {
   TrackSelectionOutcome,
   PlayerSurface,
   RenderingDiagnostics,
+  EmbeddedTextExportOptions,
+  EmbeddedTextTrackExport,
 } from "../types";
 import { EventEmitter } from "../events/EventEmitter";
 import {
@@ -56,6 +58,7 @@ import { ShakaPlayerWrapper } from "../render/ShakaPlayerWrapper";
 import { HLSPlayerWrapper } from "../render/HLSPlayerWrapper";
 import { DASHPlayerWrapper } from "../render/DASHPlayerWrapper";
 import { ThumbnailRenderer } from "../utils/ThumbnailRenderer";
+import { exportEmbeddedTextTrackFromSource } from "../subtitles/EmbeddedTextExporter";
 
 // Any of the three adaptive-streaming engines (Shaka primary; hls.js / dash.js
 // as fallbacks). They share the same surface; the Shaka-only extras (isLive,
@@ -102,6 +105,10 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
     outputVerification: "unknown",
     toneMapping: "unknown",
   };
+  private embeddedTextExportCache = new Map<
+    number,
+    Promise<EmbeddedTextTrackExport>
+  >();
 
   // Separate audio source — uses native <audio> element (zero WASM overhead)
   private nativeAudioEl: HTMLAudioElement | null = null;
@@ -703,6 +710,7 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
     }
 
     this.stateManager.setState("loading");
+    this.embeddedTextExportCache.clear();
     this.emit("loadStart", undefined);
     this.lastBufferedTime = 0;
     this.bufferedRangeStart = 0;
@@ -4224,6 +4232,56 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
     return { ...this.renderingDiagnostics };
   }
 
+  async exportEmbeddedTextTrack(
+    trackId: number,
+    options: EmbeddedTextExportOptions = {},
+  ): Promise<EmbeddedTextTrackExport> {
+    if (this._destroyed) {
+      throw new MoviError({
+        code: "DESTROYED",
+        category: "lifecycle",
+        message: "The player has been destroyed.",
+      });
+    }
+    if (!this.source) {
+      throw new MoviError({
+        code: "SUBTITLE_EXPORT_UNSUPPORTED",
+        category: "subtitle",
+        message: "No progressive source is available for subtitle export.",
+        recoverable: true,
+      });
+    }
+
+    const usesDefaultLimits =
+      options.maxTextBytes === undefined &&
+      options.maxFontCount === undefined &&
+      options.maxFontBytes === undefined &&
+      options.maxTotalFontBytes === undefined &&
+      options.signal === undefined;
+    const existing = usesDefaultLimits
+      ? this.embeddedTextExportCache.get(trackId)
+      : undefined;
+    if (existing) return existing;
+
+    const operation = exportEmbeddedTextTrackFromSource({
+      source: this.source,
+      trackId,
+      wasmBinary: this.config.wasmBinary,
+      options,
+    }).catch((error: unknown) => {
+      if (usesDefaultLimits) this.embeddedTextExportCache.delete(trackId);
+      throw normalizeMoviError(error, {
+        code: "SUBTITLE_EXPORT_UNSUPPORTED",
+        category: "subtitle",
+        recoverable: true,
+      });
+    });
+    if (usesDefaultLimits) {
+      this.embeddedTextExportCache.set(trackId, operation);
+    }
+    return operation;
+  }
+
   /**
    * Definitive, transactional track selection.
    *
@@ -7362,6 +7420,7 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
 
     // Clear cache
     this.cache.clear();
+    this.embeddedTextExportCache.clear();
 
     // Clear track manager
     this.trackManager.clear();

@@ -23,6 +23,7 @@ import {
   type MoviWasmModule,
   type StreamInfo,
   type DataSource,
+  type WasmAttachment,
 } from "../wasm";
 import { CodecParser } from "../decode/CodecParser";
 import { Logger } from "../utils/Logger";
@@ -485,6 +486,10 @@ export class Demuxer {
    */
   getDuration(): number {
     return this.duration;
+  }
+
+  getAttachments(maxBytes?: number): WasmAttachment[] {
+    return this.bindings?.getAttachments(maxBytes) ?? [];
   }
 
   /**

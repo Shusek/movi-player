@@ -1,4 +1,5 @@
 #include "movi.h"
+#include <strings.h>
 
 EMSCRIPTEN_KEEPALIVE
 double movi_get_duration(MoviContext *ctx) {
@@ -156,6 +157,98 @@ int movi_get_extradata(MoviContext *ctx, int stream_index, uint8_t *buffer,
     copy_size = buffer_size;
   memcpy(buffer, codecpar->extradata, copy_size);
   return copy_size;
+}
+
+static AVStream *movi_get_attachment_stream(MoviContext *ctx,
+                                            int attachment_index) {
+  if (!ctx || !ctx->fmt_ctx || attachment_index < 0)
+    return NULL;
+  int seen = 0;
+  for (unsigned int i = 0; i < ctx->fmt_ctx->nb_streams; i++) {
+    AVStream *stream = ctx->fmt_ctx->streams[i];
+    if (!stream || !stream->codecpar ||
+        stream->codecpar->codec_type != AVMEDIA_TYPE_ATTACHMENT)
+      continue;
+    if (seen++ == attachment_index)
+      return stream;
+  }
+  return NULL;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int movi_get_attachment_count(MoviContext *ctx) {
+  if (!ctx || !ctx->fmt_ctx)
+    return 0;
+  int count = 0;
+  for (unsigned int i = 0; i < ctx->fmt_ctx->nb_streams; i++) {
+    AVStream *stream = ctx->fmt_ctx->streams[i];
+    if (stream && stream->codecpar &&
+        stream->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT)
+      count++;
+  }
+  return count;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int movi_get_attachment_stream_index(MoviContext *ctx, int attachment_index) {
+  AVStream *stream = movi_get_attachment_stream(ctx, attachment_index);
+  return stream ? stream->index : -1;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int movi_get_attachment_size(MoviContext *ctx, int attachment_index) {
+  AVStream *stream = movi_get_attachment_stream(ctx, attachment_index);
+  if (!stream || !stream->codecpar || stream->codecpar->extradata_size <= 0)
+    return 0;
+  return stream->codecpar->extradata_size;
+}
+
+static int movi_copy_attachment_metadata(MoviContext *ctx, int attachment_index,
+                                         const char *key, char *buffer,
+                                         int buffer_size) {
+  if (!buffer || buffer_size <= 0)
+    return 0;
+  buffer[0] = '\0';
+  AVStream *stream = movi_get_attachment_stream(ctx, attachment_index);
+  if (!stream)
+    return 0;
+  const AVDictionaryEntry *entry =
+      av_dict_get(stream->metadata, key, NULL, 0);
+  if ((!entry || !entry->value) && strcmp(key, "filename") == 0)
+    entry = av_dict_get(stream->metadata, "title", NULL, 0);
+  if (!entry || !entry->value)
+    return 0;
+  strncpy(buffer, entry->value, buffer_size - 1);
+  buffer[buffer_size - 1] = '\0';
+  return (int)strlen(buffer);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int movi_get_attachment_name(MoviContext *ctx, int attachment_index,
+                             char *buffer, int buffer_size) {
+  return movi_copy_attachment_metadata(ctx, attachment_index, "filename",
+                                       buffer, buffer_size);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int movi_get_attachment_mime_type(MoviContext *ctx, int attachment_index,
+                                  char *buffer, int buffer_size) {
+  return movi_copy_attachment_metadata(ctx, attachment_index, "mimetype",
+                                       buffer, buffer_size);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int movi_get_attachment_data(MoviContext *ctx, int attachment_index,
+                             uint8_t *buffer, int buffer_size) {
+  AVStream *stream = movi_get_attachment_stream(ctx, attachment_index);
+  if (!stream || !stream->codecpar || !stream->codecpar->extradata ||
+      stream->codecpar->extradata_size <= 0)
+    return 0;
+  if (!buffer || buffer_size < stream->codecpar->extradata_size)
+    return AVERROR(ENOBUFS);
+  memcpy(buffer, stream->codecpar->extradata,
+         stream->codecpar->extradata_size);
+  return stream->codecpar->extradata_size;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -481,4 +574,52 @@ int movi_get_chapter_title(MoviContext *ctx, int index, char *buffer, int buffer
   }
   buffer[0] = '\0';
   return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int movi_get_chapter_id(MoviContext *ctx, int index, char *buffer,
+                        int buffer_size) {
+  if (!ctx || !ctx->fmt_ctx || !buffer || buffer_size <= 0 ||
+      index < 0 || index >= (int)ctx->fmt_ctx->nb_chapters)
+    return 0;
+  AVChapter *ch = ctx->fmt_ctx->chapters[index];
+  int written = snprintf(buffer, (size_t)buffer_size, "%lld",
+                         (long long)ch->id);
+  if (written < 0) {
+    buffer[0] = '\0';
+    return 0;
+  }
+  return written < buffer_size ? written : buffer_size - 1;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int movi_get_chapter_language(MoviContext *ctx, int index, char *buffer,
+                              int buffer_size) {
+  if (!ctx || !ctx->fmt_ctx || !buffer || buffer_size <= 0 ||
+      index < 0 || index >= (int)ctx->fmt_ctx->nb_chapters)
+    return 0;
+  AVChapter *ch = ctx->fmt_ctx->chapters[index];
+  const AVDictionaryEntry *entry =
+      av_dict_get(ch->metadata, "language", NULL, 0);
+  if (!entry || !entry->value) {
+    buffer[0] = '\0';
+    return 0;
+  }
+  strncpy(buffer, entry->value, buffer_size - 1);
+  buffer[buffer_size - 1] = '\0';
+  return (int)strlen(buffer);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int movi_get_chapter_hidden(MoviContext *ctx, int index) {
+  if (!ctx || !ctx->fmt_ctx || index < 0 ||
+      index >= (int)ctx->fmt_ctx->nb_chapters)
+    return 0;
+  AVChapter *ch = ctx->fmt_ctx->chapters[index];
+  const AVDictionaryEntry *entry =
+      av_dict_get(ch->metadata, "hidden", NULL, 0);
+  if (!entry || !entry->value)
+    return 0;
+  return strcmp(entry->value, "1") == 0 ||
+         strcasecmp(entry->value, "true") == 0;
 }
