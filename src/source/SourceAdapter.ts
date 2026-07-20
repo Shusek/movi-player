@@ -40,6 +40,15 @@ export interface SourceAdapter {
    * Get a unique identifier for this source (used for caching)
    */
   getKey(): string;
+
+  /**
+   * Create an independent adapter for metadata/subtitle extraction.
+   *
+   * The returned adapter must have its own cursor and close lifecycle. Custom
+   * sources may omit this method; features that require a second demuxer then
+   * fail with a typed not-supported error instead of disturbing playback.
+   */
+  fork?(): Promise<SourceAdapter>;
 }
 
 /**

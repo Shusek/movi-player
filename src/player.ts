@@ -38,11 +38,42 @@ export type {
   DecodedAudioFrame,
   PlayerState,
   PlayerEventMap,
+  TrackSelectionKind,
+  TrackSelectionRequest,
+  TrackSelectionStatus,
+  TrackSelectionOutcome,
+  PlayerSurface,
+  RenderingBackend,
+  RenderingDiagnostics,
+  Chapter,
+  ChapterLabel,
+  EmbeddedTextSubtitleFormat,
+  EmbeddedTextExportOptions,
+  EmbeddedTextTrackExport,
+  EmbeddedTextExportWarning,
+  MediaAttachment,
 } from './types';
 
 // Utilities
-export { Logger, LogLevel } from './utils/Logger';
+export { Logger, LogLevel, createLogger } from './utils/Logger';
+export type {
+  LogEntry,
+  LoggerConfig,
+  MoviLogger,
+} from './utils/Logger';
 export { Time, TIME_BASE } from './utils/Time';
+export {
+  MoviError,
+  normalizeMoviError,
+  redactSensitiveText,
+  redactUrl,
+} from './errors/MoviError';
+export type {
+  MoviErrorCategory,
+  MoviErrorCode,
+  MoviErrorInit,
+} from './errors/MoviError';
+export { MOVI_API_VERSION, MOVI_VERSION } from './version';
 
 // Events
 export { EventEmitter } from './events/EventEmitter';

@@ -12,6 +12,7 @@ import {
 import { CanvasRenderer } from "./CanvasRenderer";
 import { TrackManager } from "../core/TrackManager";
 import { Logger } from "../utils/Logger";
+import { normalizeMoviError } from "../errors/MoviError";
 
 const TAG = "ShakaPlayerWrapper";
 
@@ -252,7 +253,13 @@ export class ShakaPlayerWrapper extends EventEmitter<PlayerEventMap> {
     });
     this.videoElement.addEventListener("error", (_e) => {
       const error = this.videoElement.error;
-      this.emit("error", new Error(error?.message || "Video element error"));
+      this.emit(
+        "error",
+        normalizeMoviError(
+          new Error(error?.message || "Video element error"),
+          { code: "DECODE", category: "codec" },
+        ),
+      );
       this.setState("error");
     });
   }
@@ -482,7 +489,13 @@ export class ShakaPlayerWrapper extends EventEmitter<PlayerEventMap> {
       // Pre-load errors are handled by load()'s rejection + the caller's
       // fallback — don't surface them (would flash an error before recovery).
       if (!this._loaded) return;
-      this.emit("error", new Error(this.friendlyMessage(detail)));
+      this.emit(
+        "error",
+        normalizeMoviError(new Error(this.friendlyMessage(detail)), {
+          code: "NETWORK",
+          category: "network",
+        }),
+      );
       this.setState("error");
     });
 

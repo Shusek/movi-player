@@ -1964,6 +1964,14 @@ export class HttpSource implements SourceAdapter {
     return this.url;
   }
 
+  async fork(): Promise<SourceAdapter> {
+    return new HttpSource(
+      this.url,
+      { ...this.headers },
+      this.maxBufferSizeMB,
+    );
+  }
+
   getUrl(): string {
     return this.url;
   }
