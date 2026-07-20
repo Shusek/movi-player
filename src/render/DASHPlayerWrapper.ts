@@ -11,6 +11,7 @@ import {
 import { CanvasRenderer } from "./CanvasRenderer";
 import { TrackManager } from "../core/TrackManager";
 import { Logger } from "../utils/Logger";
+import { normalizeMoviError } from "../errors/MoviError";
 
 const TAG = "DASHPlayerWrapper";
 
@@ -116,7 +117,13 @@ export class DASHPlayerWrapper extends EventEmitter<PlayerEventMap> {
     });
     this.videoElement.addEventListener("error", (_e) => {
       const error = this.videoElement.error;
-      this.emit("error", new Error(error?.message || "Video element error"));
+      this.emit(
+        "error",
+        normalizeMoviError(
+          new Error(error?.message || "Video element error"),
+          { code: "DECODE", category: "codec" },
+        ),
+      );
       this.setState("error");
     });
   }
@@ -249,7 +256,13 @@ export class DASHPlayerWrapper extends EventEmitter<PlayerEventMap> {
           reject(err);
         } else {
           // Post-load runtime error — surface to listeners as usual.
-          this.emit("error", err);
+          this.emit(
+            "error",
+            normalizeMoviError(err, {
+              code: "NETWORK",
+              category: "network",
+            }),
+          );
           this.setState("error");
         }
       });
@@ -452,7 +465,13 @@ export class DASHPlayerWrapper extends EventEmitter<PlayerEventMap> {
 
           if (!response.ok) {
             Logger.error(TAG, `EME: License request failed (HTTP ${response.status})`);
-            this.emit("error", new Error(`DRM license request failed (HTTP ${response.status})`));
+            this.emit(
+              "error",
+              normalizeMoviError(
+                new Error(`DRM license request failed (HTTP ${response.status})`),
+                { code: "DRM_LICENSE", category: "drm" },
+              ),
+            );
             return;
           }
 
@@ -464,7 +483,13 @@ export class DASHPlayerWrapper extends EventEmitter<PlayerEventMap> {
         await session.generateRequest(event.initDataType, event.initData!);
       } catch (err) {
         Logger.error(TAG, "EME: DRM setup failed", err);
-        this.emit("error", new Error(`DRM not supported or license server unreachable`));
+        this.emit(
+          "error",
+          normalizeMoviError(
+            new Error("DRM not supported or license server unreachable"),
+            { code: "DRM_EME", category: "drm" },
+          ),
+        );
       }
     });
   }

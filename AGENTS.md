@@ -365,7 +365,7 @@ Currently only `canvas` is supported but the abstraction exists. To add e.g. a W
 
 ### Touch the WASM layer
 
-The WASM module is built via Docker: `npm run build:wasm`. It compiles FFmpeg + dav1d + Signalsmith Stretch into a single `.wasm`. ABI surface is in [src/wasm/types.ts](src/wasm/types.ts) and [src/wasm/bindings.ts](src/wasm/bindings.ts). Don't change exports without rebuilding both the WASM and the TS bindings.
+The WASM module is built via Docker: `npm run build:wasm`. It compiles FFmpeg + dav1d + Signalsmith Stretch into a lazily loaded `dist/wasm/movi.wasm` plus Emscripten glue. ABI surface is in [src/wasm/types.ts](src/wasm/types.ts) and [src/wasm/bindings.ts](src/wasm/bindings.ts). Don't change exports without rebuilding both the WASM and the TS bindings.
 
 ---
 

@@ -2,6 +2,9 @@
  * Movi Types - Core type definitions for the streaming video library
  */
 
+import type { MoviError } from "./errors/MoviError";
+import type { LoggerConfig } from "./utils/Logger";
+
 // ============================================================================
 // Track Types
 // ============================================================================
@@ -18,6 +21,8 @@ export interface Track {
   level?: number;
   language?: string;
   label?: string;
+  isDefault?: boolean;
+  isForced?: boolean;
   // Video-specific
   width?: number;
   height?: number;
@@ -71,6 +76,31 @@ export interface SubtitleTrack extends Track {
   subtitleType: "text" | "image";
 }
 
+export type TrackSelectionKind = "video" | "audio" | "subtitle";
+
+export type TrackSelectionRequest =
+  | { kind: "video"; trackId: number | null }
+  | { kind: "audio"; trackId: number | null }
+  | { kind: "subtitle"; trackId: number | null };
+
+export type TrackSelectionStatus =
+  | "selected"
+  | "unchanged"
+  | "auto"
+  | "disabled"
+  | "not-found"
+  | "not-supported"
+  | "failed"
+  | "superseded";
+
+export interface TrackSelectionOutcome {
+  kind: TrackSelectionKind;
+  status: TrackSelectionStatus;
+  requestedTrackId: number | null;
+  activeTrack: Track | null;
+  error?: MoviError;
+}
+
 // ============================================================================
 // Subtitle Types
 // ============================================================================
@@ -83,17 +113,63 @@ export interface SubtitleCue {
   position?: { x: number; y: number };
 }
 
+export type EmbeddedTextSubtitleFormat =
+  | "ass"
+  | "ssa"
+  | "srt"
+  | "webvtt"
+  | "text";
+
+export interface MediaAttachment {
+  id: string;
+  name: string;
+  mimeType: string;
+  kind: "font" | "other";
+  data: Uint8Array;
+}
+
+export interface EmbeddedTextExportWarning {
+  code: "ATTACHMENT_SKIPPED" | "ATTACHMENT_LIMIT";
+  message: string;
+}
+
+export interface EmbeddedTextExportOptions {
+  signal?: AbortSignal;
+  maxTextBytes?: number;
+  maxFontCount?: number;
+  maxFontBytes?: number;
+  maxTotalFontBytes?: number;
+}
+
+export interface EmbeddedTextTrackExport {
+  trackId: number;
+  format: EmbeddedTextSubtitleFormat;
+  content: string;
+  attachments: MediaAttachment[];
+  warnings: EmbeddedTextExportWarning[];
+}
+
 // ============================================================================
 // Player Configuration
 // ============================================================================
 
-export interface SourceConfig {
-  type: "url" | "file" | "encrypted";
-  url?: string;
-  file?: File;
+export interface UrlSourceConfig {
+  type: "url";
+  url: string;
   headers?: Record<string, string>;
-  /** Encrypted source config */
-  encrypted?: {
+}
+
+export interface FileSourceConfig {
+  type: "file";
+  file: File | Blob;
+  /** Optional display/cache name for anonymous Blob values. */
+  name?: string;
+}
+
+export interface EncryptedSourceDescriptor {
+  type: "encrypted";
+  headers?: Record<string, string>;
+  encrypted: {
     videoUrl: string;
     tokenUrl: string;
     videoId: string;
@@ -103,6 +179,11 @@ export interface SourceConfig {
     onAuthFailed?: (reason: string) => void;
   };
 }
+
+export type SourceConfig =
+  | UrlSourceConfig
+  | FileSourceConfig
+  | EncryptedSourceDescriptor;
 
 /** Audio source with language metadata for multi-language support */
 export interface AudioSourceEntry {
@@ -159,18 +240,80 @@ export interface PlayerConfig {
   drm?: boolean; // Enable DRM mode for HLS (native video element, no canvas)
   licenseUrl?: string; // Widevine/FairPlay license server URL
   licenseHeaders?: Record<string, string>; // Custom headers for license requests (e.g., auth tokens)
+  /** Preferred typed DRM configuration. Legacy DRM fields remain supported. */
+  drmConfig?: {
+    licenseUrl: string;
+    licenseHeaders?: Record<string, string>;
+  };
+  /** Per-player structured logger. Sensitive fields are always redacted. */
+  logger?: LoggerConfig;
+  /** Optional base URL for lazily loaded player assets. */
+  assetBaseUrl?: string;
+  /**
+   * Selects who renders progressive embedded text subtitles.
+   *
+   * `internal` keeps the built-in renderer (default). `host` keeps track
+   * selection and export available through the public API, but does not decode
+   * or draw text subtitle packets. This lets an embedding application render
+   * exported ASS/SSA/SRT/WebVTT itself without duplicate cues. Image subtitles
+   * and adaptive-stream subtitles always remain internally rendered.
+   */
+  embeddedTextSubtitleRenderer?: "internal" | "host";
   lcevc?: boolean; // Enable MPEG-5 Part 2 LCEVC decoding (needs the lcevc_dec.js library)
   lcevcUrl?: string; // Optional URL to lazy-load the lcevc_dec.js decoder library (else expect a global LCEVCdec)
+}
+
+export type PlayerSurface =
+  | {
+      kind: "canvas";
+      element: HTMLCanvasElement | OffscreenCanvas;
+      reason: "progressive" | "adaptive";
+    }
+  | {
+      kind: "video";
+      element: HTMLVideoElement;
+      reason: "adaptive" | "drm";
+    };
+
+export type RenderingBackend =
+  | "progressive-wasm"
+  | "shaka"
+  | "hls.js"
+  | "dash.js"
+  | "unknown";
+
+export interface RenderingDiagnostics {
+  backend: RenderingBackend;
+  container?: string;
+  decoder: "webcodecs" | "wasm" | "native" | "none" | "unknown";
+  renderer: "canvas" | "native-video" | "none" | "unknown";
+  sourceDynamicRange: "sdr" | "hdr10" | "hlg" | "dolby-vision" | "unknown";
+  outputDynamicRange: "sdr" | "hdr" | "unknown";
+  outputVerification: "confirmed" | "inferred" | "unknown";
+  requestedColorSpace?: string;
+  appliedColorSpace?: string;
+  toneMapping: "none" | "native" | "shader" | "unknown";
 }
 
 // ============================================================================
 // Media Info
 // ============================================================================
 
+export interface ChapterLabel {
+  text: string;
+  language?: string;
+  country?: string;
+}
+
 export interface Chapter {
   title: string;
   start: number; // seconds
   end: number;   // seconds
+  /** Stable within this media source. Always populated by Movi at runtime. */
+  id?: string;
+  labels?: ChapterLabel[];
+  language?: string;
+  isHidden?: boolean;
 }
 
 export interface MediaInfo {
@@ -291,7 +434,11 @@ export interface PlayerEventMap {
   timeUpdate: number;
   durationChange: number;
   tracksChange: Track[];
-  error: Error;
+  error: MoviError;
+  trackChange: TrackSelectionOutcome;
+  surfaceChange: PlayerSurface | null;
+  chaptersChange: Chapter[];
+  diagnosticsChange: RenderingDiagnostics;
   filerevoked: { offset: number; length: number; reason: string };
   loadStart: void;
   loadEnd: void;

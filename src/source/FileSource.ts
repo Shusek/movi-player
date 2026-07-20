@@ -14,8 +14,20 @@ const TAG = "FileSource";
 // Chunk size for reading file (2MB chunks)
 const CHUNK_SIZE = 2 * 1024 * 1024;
 
+const blobIds = new WeakMap<Blob, number>();
+let nextBlobId = 1;
+
+function blobId(blob: Blob): number {
+  const existing = blobIds.get(blob);
+  if (existing !== undefined) return existing;
+  const assigned = nextBlobId++;
+  blobIds.set(blob, assigned);
+  return assigned;
+}
+
 export class FileSource implements SourceAdapter {
-  private file: File;
+  private file: File | Blob;
+  private displayName: string;
   private cache: LRUCache;
   private size: number = -1;
   private position: number = 0;
@@ -49,8 +61,17 @@ export class FileSource implements SourceAdapter {
   private preloadComplete: boolean = false;
   private onPreloadCompleteCallback: (() => void) | null = null;
 
-  constructor(file: File, cache: LRUCache | null = null) {
+  constructor(
+    file: File | Blob,
+    cache: LRUCache | null = null,
+    displayName?: string,
+  ) {
     this.file = file;
+    this.displayName =
+      displayName ??
+      (typeof File !== "undefined" && file instanceof File
+        ? file.name
+        : `blob-${blobId(file)}`);
     this.size = file.size;
     // Use provided cache or create a default one
     this.cache = cache || new LRUCache(100); // Default 100MB cache
@@ -213,8 +234,20 @@ export class FileSource implements SourceAdapter {
    * Get a unique identifier for this source (used for caching)
    */
   getKey(): string {
-    // Use file name, size, and last modified time as key
-    return `file:${this.file.name}:${this.file.size}:${this.file.lastModified}`;
+    const lastModified =
+      typeof File !== "undefined" && this.file instanceof File
+        ? this.file.lastModified
+        : 0;
+    return `file:${this.displayName}:${this.file.size}:${lastModified}:${blobId(this.file)}`;
+  }
+
+  async fork(): Promise<SourceAdapter> {
+    const fork = new FileSource(this.file, null, this.displayName);
+    // Independent readers are used for bounded metadata and subtitle scans.
+    // They issue the reads they need explicitly; a second whole-file
+    // background preload only duplicates memory and disk traffic.
+    fork.setFullFilePreload(false);
+    return fork;
   }
 
   /**
@@ -246,7 +279,7 @@ export class FileSource implements SourceAdapter {
           : "";
       Logger.debug(
         TAG,
-        `Starting preload for file: ${this.file.name} around offset ${startOffset}${timeInfo} (${this.size} bytes)`,
+        `Starting preload for file: ${this.displayName} around offset ${startOffset}${timeInfo} (${this.size} bytes)`,
       );
 
       // Preload only runs before playback starts (initial load).
@@ -316,11 +349,11 @@ export class FileSource implements SourceAdapter {
       if (!this.preloadAbort) {
         Logger.debug(
           TAG,
-          `Preload completed for file: ${this.file.name} around offset ${startOffset}`,
+          `Preload completed for file: ${this.displayName} around offset ${startOffset}`,
         );
       }
     } catch (error) {
-      Logger.error(TAG, `Failed to preload file: ${this.file.name}`, error);
+      Logger.error(TAG, `Failed to preload file: ${this.displayName}`, error);
     } finally {
       this.preloadPromise = null;
       this.preloadAbort = false;
@@ -506,10 +539,11 @@ export class FileSource implements SourceAdapter {
  * Factory function to create a FileSource
  */
 export async function createFileSource(
-  file: File,
+  file: File | Blob,
   cache: LRUCache | null = null,
+  displayName?: string,
 ): Promise<FileSource> {
-  const source = new FileSource(file, cache);
+  const source = new FileSource(file, cache, displayName);
   // Start preloading chunks into cache
   await source.getSize();
   return source;
