@@ -1,0 +1,115 @@
+{
+  "generatedAt": "2026-07-20T12:47:53.401Z",
+  "entries": {
+    "engine.js": {
+      "bytes": 254,
+      "brotliBytes": 158,
+      "initialGraph": {
+        "files": [
+          "engine.js",
+          "chunks/engine-CdHKviDz.js"
+        ],
+        "bytes": 423169,
+        "brotliBytes": 79724
+      }
+    },
+    "engine.cjs": {
+      "bytes": 11113369,
+      "brotliBytes": 2879452
+    },
+    "player.js": {
+      "bytes": 426870,
+      "brotliBytes": 80283
+    },
+    "element.js": {
+      "bytes": 945,
+      "brotliBytes": 426
+    }
+  },
+  "wasm": {
+    "bytes": 5616583,
+    "brotliBytes": 1703548
+  },
+  "chunks": [
+    {
+      "file": "chunks/DASHPlayerWrapper-65JcnmD8.js",
+      "bytes": 1166975,
+      "brotliBytes": 222654
+    },
+    {
+      "file": "chunks/DASHPlayerWrapper-CE_87xyn.js",
+      "bytes": 1166925,
+      "brotliBytes": 222605
+    },
+    {
+      "file": "chunks/DASHPlayerWrapper-CRr8zM55.js",
+      "bytes": 1166927,
+      "brotliBytes": 222567
+    },
+    {
+      "file": "chunks/DASHPlayerWrapper-Yx1JanrI.js",
+      "bytes": 1166926,
+      "brotliBytes": 222497
+    },
+    {
+      "file": "chunks/HLSPlayerWrapper-B_uTAmqo.js",
+      "bytes": 722471,
+      "brotliBytes": 147674
+    },
+    {
+      "file": "chunks/HLSPlayerWrapper-BbPTSPbv.js",
+      "bytes": 722421,
+      "brotliBytes": 147634
+    },
+    {
+      "file": "chunks/HLSPlayerWrapper-BbUQJt9Y.js",
+      "bytes": 722422,
+      "brotliBytes": 147600
+    },
+    {
+      "file": "chunks/HLSPlayerWrapper-CC65VO0k.js",
+      "bytes": 722423,
+      "brotliBytes": 147678
+    },
+    {
+      "file": "chunks/ShakaPlayerWrapper-9JRkCpIm.js",
+      "bytes": 1193221,
+      "brotliBytes": 230452
+    },
+    {
+      "file": "chunks/ShakaPlayerWrapper-BTgd-CPL.js",
+      "bytes": 1193220,
+      "brotliBytes": 230519
+    },
+    {
+      "file": "chunks/ShakaPlayerWrapper-D-E841Bv.js",
+      "bytes": 1193222,
+      "brotliBytes": 230356
+    },
+    {
+      "file": "chunks/ShakaPlayerWrapper-Y51-HuC2.js",
+      "bytes": 1193270,
+      "brotliBytes": 230555
+    },
+    {
+      "file": "chunks/element-DxaWc_Pw.js",
+      "bytes": 953451,
+      "brotliBytes": 164102
+    },
+    {
+      "file": "chunks/engine-CdHKviDz.js",
+      "bytes": 422915,
+      "brotliBytes": 79566
+    },
+    {
+      "file": "chunks/index-BjtOcwQ2.js",
+      "bytes": 953451,
+      "brotliBytes": 164058
+    },
+    {
+      "file": "chunks/movi-gLxgMAG1.js",
+      "bytes": 7561007,
+      "brotliBytes": 2212071
+    }
+  ]
+}
