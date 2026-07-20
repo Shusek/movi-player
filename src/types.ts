@@ -249,6 +249,16 @@ export interface PlayerConfig {
   logger?: LoggerConfig;
   /** Optional base URL for lazily loaded player assets. */
   assetBaseUrl?: string;
+  /**
+   * Selects who renders progressive embedded text subtitles.
+   *
+   * `internal` keeps the built-in renderer (default). `host` keeps track
+   * selection and export available through the public API, but does not decode
+   * or draw text subtitle packets. This lets an embedding application render
+   * exported ASS/SSA/SRT/WebVTT itself without duplicate cues. Image subtitles
+   * and adaptive-stream subtitles always remain internally rendered.
+   */
+  embeddedTextSubtitleRenderer?: "internal" | "host";
   lcevc?: boolean; // Enable MPEG-5 Part 2 LCEVC decoding (needs the lcevc_dec.js library)
   lcevcUrl?: string; // Optional URL to lazy-load the lcevc_dec.js decoder library (else expect a global LCEVCdec)
 }

@@ -299,6 +299,21 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
     this.emit("diagnosticsChange", this.getRenderingDiagnostics());
   }
 
+  /**
+   * Whether the embedding application owns rendering for this progressive
+   * text-subtitle track. Adaptive wrappers and image subtitles continue to use
+   * Movi's renderer.
+   */
+  private isHostRenderedTextSubtitle(
+    track: SubtitleTrack | null,
+  ): boolean {
+    return (
+      !this.streamWrapper &&
+      this.config.embeddedTextSubtitleRenderer === "host" &&
+      track?.subtitleType === "text"
+    );
+  }
+
   // Decoders and Renderers
   private videoDecoder: MoviVideoDecoder;
   private audioDecoder: MoviAudioDecoder;
@@ -1150,7 +1165,11 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
 
     // Configure subtitle decoder
     const subtitleTrack = this.trackManager.getActiveSubtitleTrack();
-    if (subtitleTrack && this.subtitleDecoder) {
+    if (
+      subtitleTrack &&
+      this.subtitleDecoder &&
+      !this.isHostRenderedTextSubtitle(subtitleTrack)
+    ) {
       const extradata =
         this.demuxer.getExtradata(subtitleTrack.id) ?? undefined;
       const configured = await this.subtitleDecoder.configure(
@@ -3053,7 +3072,8 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
             if (
               activeSubtitle &&
               activeSubtitle.id === packet.streamIndex &&
-              this.subtitleDecoder
+              this.subtitleDecoder &&
+              !this.isHostRenderedTextSubtitle(activeSubtitle)
             ) {
               let duration = packet.duration;
               if (!duration || duration <= 0) {
@@ -4659,9 +4679,21 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
       return result;
     }
 
+    const selectedSubtitleTrack =
+      this.trackManager.getActiveSubtitleTrack();
+    if (this.isHostRenderedTextSubtitle(selectedSubtitleTrack)) {
+      Logger.info(
+        TAG,
+        `Host rendering enabled for embedded text subtitle track ${selectedSubtitleTrack?.id}`,
+      );
+      this.videoRenderer?.clearSubtitles();
+      this.subtitleDecoder?.close();
+      return result;
+    }
+
     // Configure decoder for new subtitle track
     if (this.demuxer && this.subtitleDecoder) {
-      const subtitleTrack = this.trackManager.getActiveSubtitleTrack();
+      const subtitleTrack = selectedSubtitleTrack;
       Logger.info(
         TAG,
         `Configuring subtitle decoder for track: id=${subtitleTrack?.id}, codec=${subtitleTrack?.codec}, type=${subtitleTrack?.subtitleType}`,

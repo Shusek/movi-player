@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AudioTrack, TrackSelectionOutcome } from "../types";
+import type {
+  AudioTrack,
+  SubtitleTrack,
+  TrackSelectionOutcome,
+} from "../types";
 import { MoviPlayer } from "./MoviPlayer";
 
 function audioTrack(id: number, language: string): AudioTrack {
@@ -12,6 +16,22 @@ function audioTrack(id: number, language: string): AudioTrack {
     language,
     label: language.toUpperCase(),
     isDefault: id === 1,
+  };
+}
+
+function subtitleTrack(
+  id: number,
+  subtitleType: "text" | "image",
+): SubtitleTrack {
+  return {
+    id,
+    type: "subtitle",
+    codec: subtitleType === "text" ? "ass" : "hdmv_pgs_subtitle",
+    language: "pl",
+    label: "Polski",
+    subtitleType,
+    isDefault: false,
+    isForced: false,
   };
 }
 
@@ -121,5 +141,30 @@ describe("MoviPlayer programmatic contracts", () => {
       renderer: "none",
       outputVerification: "unknown",
     });
+  });
+
+  it("leaves progressive embedded text subtitle rendering to the host", async () => {
+    const player = new MoviPlayer({
+      embeddedTextSubtitleRenderer: "host",
+    });
+    player.trackManager.setTracks([subtitleTrack(7, "text")]);
+    const decoder = (player as unknown as {
+      subtitleDecoder: {
+        configure: (...args: unknown[]) => Promise<boolean>;
+        close: () => void;
+      };
+    }).subtitleDecoder;
+    const configure = vi.spyOn(decoder, "configure");
+    const close = vi.spyOn(decoder, "close");
+
+    const outcome = await player.selectTrack({
+      kind: "subtitle",
+      trackId: 7,
+    });
+
+    expect(outcome.status).toBe("selected");
+    expect(player.getActiveSubtitleTrack()?.id).toBe(7);
+    expect(configure).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledOnce();
   });
 });
