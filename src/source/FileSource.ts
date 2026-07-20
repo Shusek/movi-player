@@ -242,7 +242,12 @@ export class FileSource implements SourceAdapter {
   }
 
   async fork(): Promise<SourceAdapter> {
-    return new FileSource(this.file, null, this.displayName);
+    const fork = new FileSource(this.file, null, this.displayName);
+    // Independent readers are used for bounded metadata and subtitle scans.
+    // They issue the reads they need explicitly; a second whole-file
+    // background preload only duplicates memory and disk traffic.
+    fork.setFullFilePreload(false);
+    return fork;
   }
 
   /**

@@ -22,6 +22,7 @@ import type {
   RenderingDiagnostics,
   EmbeddedTextExportOptions,
   EmbeddedTextTrackExport,
+  Chapter,
 } from "../types";
 import { EventEmitter } from "../events/EventEmitter";
 import {
@@ -59,6 +60,7 @@ import { HLSPlayerWrapper } from "../render/HLSPlayerWrapper";
 import { DASHPlayerWrapper } from "../render/DASHPlayerWrapper";
 import { ThumbnailRenderer } from "../utils/ThumbnailRenderer";
 import { exportEmbeddedTextTrackFromSource } from "../subtitles/EmbeddedTextExporter";
+import { readMatroskaChapters } from "../chapters/MatroskaChapterParser";
 
 // Any of the three adaptive-streaming engines (Shaka primary; hls.js / dash.js
 // as fallbacks). They share the same surface; the Shaka-only extras (isLive,
@@ -860,6 +862,8 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
 
       // Cache file size for buffer calculations (getSize was called in bindings.open())
       this.fileSize = await this.source.getSize();
+      await this.enrichProgressiveChapters();
+      if (this._destroyed) return;
 
       const bindings = this.demuxer.getBindings();
       if (bindings) {
@@ -996,6 +1000,39 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
     }
 
     throw new Error("Invalid source configuration");
+  }
+
+  private async enrichProgressiveChapters(): Promise<void> {
+    if (!this.mediaInfo || !this.source) return;
+    const container = this.mediaInfo.formatName.toLowerCase();
+    if (container.includes("matroska") || container.includes("webm")) {
+      try {
+        const parsed = await readMatroskaChapters(
+          this.source,
+          this.mediaInfo.duration,
+        );
+        if (!this._destroyed && parsed.length > 0) {
+          this.mediaInfo.chapters = parsed;
+        }
+      } catch (error) {
+        // FFmpeg's flat chapter list remains a valid fallback. This parser is
+        // only an enrichment layer for Matroska edition/language metadata.
+        this.logger.warn(
+          TAG,
+          "Matroska chapter enrichment failed",
+          error,
+        );
+      }
+    }
+    if (!this._destroyed) {
+      this.emit(
+        "chaptersChange",
+        this.mediaInfo.chapters.map((chapter) => ({
+          ...chapter,
+          labels: chapter.labels?.map((label) => ({ ...label })),
+        })),
+      );
+    }
   }
 
   /**
@@ -4859,8 +4896,11 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
   /**
    * Get chapters from the media (empty array if none)
    */
-  getChapters(): Array<{ title: string; start: number; end: number }> {
-    return this.mediaInfo?.chapters ?? [];
+  getChapters(): Chapter[] {
+    return (this.mediaInfo?.chapters ?? []).map((chapter) => ({
+      ...chapter,
+      labels: chapter.labels?.map((label) => ({ ...label })),
+    }));
   }
 
   resizeCanvas(width: number, height: number): void {

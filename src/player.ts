@@ -70,6 +70,11 @@ export type {
   EmbeddedTextExportSource,
 } from './subtitles/EmbeddedTextExporter';
 export {
+  parseMatroskaChaptersElement,
+  readMatroskaChapters,
+  type MatroskaChapterReadOptions,
+} from './chapters/MatroskaChapterParser';
+export {
   MoviError,
   normalizeMoviError,
   redactSensitiveText,
