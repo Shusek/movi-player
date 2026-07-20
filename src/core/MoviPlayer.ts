@@ -55,9 +55,9 @@ import { CanvasRenderer, type VRView } from "../render/CanvasRenderer";
 import { AudioRenderer } from "../render/AudioRenderer";
 import { updateAllBindingsLogLevel, ThumbnailBindings } from "../wasm/bindings";
 import { loadWasmModuleNew } from "../wasm/FFmpegLoader";
-import { ShakaPlayerWrapper } from "../render/ShakaPlayerWrapper";
-import { HLSPlayerWrapper } from "../render/HLSPlayerWrapper";
-import { DASHPlayerWrapper } from "../render/DASHPlayerWrapper";
+import type { ShakaPlayerWrapper } from "../render/ShakaPlayerWrapper";
+import type { HLSPlayerWrapper } from "../render/HLSPlayerWrapper";
+import type { DASHPlayerWrapper } from "../render/DASHPlayerWrapper";
 import { ThumbnailRenderer } from "../utils/ThumbnailRenderer";
 import { exportEmbeddedTextTrackFromSource } from "../subtitles/EmbeddedTextExporter";
 import { readMatroskaChapters } from "../chapters/MatroskaChapterParser";
@@ -95,6 +95,7 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
   private cache: LRUCache;
   private demuxer: Demuxer | null = null;
   private trackSelectionGeneration = 0;
+  private audioSelectionTail: Promise<void> = Promise.resolve();
   private audioSelectionCommit = false;
   private audioTrackSwitchInProgress = false;
   private surface: PlayerSurface | null = null;
@@ -766,6 +767,9 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
 
       // --- Tier 1: Shaka (HLS + DASH + MSS + muxed). ---
       try {
+        const { ShakaPlayerWrapper } = await import(
+          "../render/ShakaPlayerWrapper"
+        );
         const shaka = new ShakaPlayerWrapper(this.config);
         this.streamWrapper = shaka;
         this.wireStreamWrapper(shaka);
@@ -785,8 +789,10 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
         if (isHls || isDash) {
           try {
             const fb = isHls
-              ? new HLSPlayerWrapper(this.config)
-              : new DASHPlayerWrapper(this.config);
+              ? new (await import("../render/HLSPlayerWrapper"))
+                  .HLSPlayerWrapper(this.config)
+              : new (await import("../render/DASHPlayerWrapper"))
+                  .DASHPlayerWrapper(this.config);
             this.streamWrapper = fb;
             this.wireStreamWrapper(fb);
             Logger.info(TAG, `Shaka failed; retrying with ${isHls ? "hls.js" : "dash.js"}`);
@@ -852,7 +858,12 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
       }
 
       // Create demuxer (getSize will be called lazily in bindings.open())
-      this.demuxer = new Demuxer(this.source, this.config.wasmBinary);
+      this.demuxer = new Demuxer(
+        this.source,
+        this.config.wasmBinary,
+        false,
+        this.config.assetBaseUrl,
+      );
 
       // Open and get media info
       this.mediaInfo = await this.demuxer.open();
@@ -4061,6 +4072,7 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
     // This prevents onReadRequest handler conflicts with main playback
     const module = await loadWasmModuleNew({
       wasmBinary: this.config.wasmBinary,
+      assetBaseUrl: this.config.assetBaseUrl,
     });
     Logger.debug(TAG, "Isolated WASM module loaded for thumbnails");
 
@@ -4304,6 +4316,7 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
       source: this.source,
       trackId,
       wasmBinary: this.config.wasmBinary,
+      assetBaseUrl: this.config.assetBaseUrl,
       options,
     }).catch((error: unknown) => {
       if (usesDefaultLimits) this.embeddedTextExportCache.delete(trackId);
@@ -4372,57 +4385,58 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
     if (initialStop) return initialStop;
 
     if (request.kind === "audio") {
-      const previousAudio =
-        previous?.type === "audio" ? previous : null;
-      const tracks = this.getAudioTracks();
-      const target =
-        request.trackId === null
-          ? tracks.find((track) => track.isDefault) ?? tracks[0] ?? null
-          : tracks.find((track) => track.id === request.trackId) ?? null;
-      if (!target) {
-        return this.trackSelectionFailure(
-          request,
-          previous,
-          "TRACK_NOT_FOUND",
-          "track",
-          "The requested audio track is unavailable.",
-          "not-found",
-        );
-      }
-      if (previous?.id === target.id) {
-        return {
-          kind: "audio",
-          status: request.trackId === null ? "auto" : "unchanged",
-          requestedTrackId: request.trackId,
-          activeTrack: previous,
-        };
-      }
-
-      let prepared = false;
-      if (this.streamWrapper) {
-        prepared = this.streamWrapper.selectAudioTrack(target.id);
-      } else {
-        prepared = await this.configureAudioTrack(target);
-      }
-
-      const postConfigureStop = stopped();
-      if (postConfigureStop) return postConfigureStop;
-      if (!prepared) {
-        if (!this.streamWrapper && previousAudio) {
-          await this.configureAudioTrack(previousAudio);
+      return this.serializeAudioSelection(async () => {
+        const queuedStop = stopped();
+        if (queuedStop) return queuedStop;
+        const previousAudio =
+          previous?.type === "audio" ? previous : null;
+        const tracks = this.getAudioTracks();
+        const target =
+          request.trackId === null
+            ? tracks.find((track) => track.isDefault) ??
+              tracks[0] ??
+              null
+            : tracks.find((track) => track.id === request.trackId) ??
+              null;
+        if (!target) {
+          return this.trackSelectionFailure(
+            request,
+            previous,
+            "TRACK_NOT_FOUND",
+            "track",
+            "The requested audio track is unavailable.",
+            "not-found",
+          );
         }
-        return this.trackSelectionFailure(
-          request,
-          previous,
-          "TRACK_SWITCH_FAILED",
-          "track",
-          "The audio decoder rejected the requested track.",
-        );
-      }
+        if (previous?.id === target.id) {
+          return {
+            kind: "audio",
+            status:
+              request.trackId === null ? "auto" : "unchanged",
+            requestedTrackId: request.trackId,
+            activeTrack: previous,
+          };
+        }
 
-      this.audioSelectionCommit = true;
-      try {
-        if (!this.trackManager.selectAudioTrack(target.id)) {
+        let prepared = false;
+        if (this.streamWrapper) {
+          prepared = this.streamWrapper.selectAudioTrack(target.id);
+        } else {
+          prepared = await this.configureAudioTrack(target);
+        }
+
+        const postConfigureStop = stopped();
+        if (postConfigureStop) {
+          if (previousAudio) {
+            if (this.streamWrapper) {
+              this.streamWrapper.selectAudioTrack(previousAudio.id);
+            } else {
+              await this.configureAudioTrack(previousAudio);
+            }
+          }
+          return postConfigureStop;
+        }
+        if (!prepared) {
           if (!this.streamWrapper && previousAudio) {
             await this.configureAudioTrack(previousAudio);
           }
@@ -4431,21 +4445,37 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
             previous,
             "TRACK_SWITCH_FAILED",
             "track",
-            "The requested audio track could not be committed.",
+            "The audio decoder rejected the requested track.",
           );
         }
-      } finally {
-        this.audioSelectionCommit = false;
-      }
-      this.applyStreamDiscard();
-      const outcome: TrackSelectionOutcome = {
-        kind: "audio",
-        status: request.trackId === null ? "auto" : "selected",
-        requestedTrackId: request.trackId,
-        activeTrack: target,
-      };
-      this.emit("trackChange", outcome);
-      return outcome;
+
+        this.audioSelectionCommit = true;
+        try {
+          if (!this.trackManager.selectAudioTrack(target.id)) {
+            if (!this.streamWrapper && previousAudio) {
+              await this.configureAudioTrack(previousAudio);
+            }
+            return this.trackSelectionFailure(
+              request,
+              previous,
+              "TRACK_SWITCH_FAILED",
+              "track",
+              "The requested audio track could not be committed.",
+            );
+          }
+        } finally {
+          this.audioSelectionCommit = false;
+        }
+        this.applyStreamDiscard();
+        const outcome: TrackSelectionOutcome = {
+          kind: "audio",
+          status: request.trackId === null ? "auto" : "selected",
+          requestedTrackId: request.trackId,
+          activeTrack: target,
+        };
+        this.emit("trackChange", outcome);
+        return outcome;
+      });
     }
 
     if (request.kind === "video") {
@@ -4555,6 +4585,22 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
         recoverable: true,
       }),
     };
+  }
+
+  private async serializeAudioSelection<T>(
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const predecessor = this.audioSelectionTail;
+    let release: () => void = () => {};
+    this.audioSelectionTail = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await predecessor;
+    try {
+      return await operation();
+    } finally {
+      release();
+    }
   }
 
   /**
@@ -5342,6 +5388,7 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
         this.audioSource,
         this.config.wasmBinary,
         true,
+        this.config.assetBaseUrl,
       );
       await this.audioDemuxer.open();
       const aTrack = this.audioDemuxer.getAudioTracks()[0];
@@ -7341,6 +7388,7 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
         this.source,
         this.fileSize,
         this.config.wasmBinary,
+        this.config.assetBaseUrl,
       );
       if (!data || data.length === 0) {
         this.emit("coverart", null);
@@ -7473,6 +7521,18 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
     // Reset state
     this.stateManager.reset();
     this.mediaInfo = null;
+    this.surface = null;
+    this.renderingDiagnostics = {
+      backend: "unknown",
+      decoder: "none",
+      renderer: "none",
+      sourceDynamicRange: "unknown",
+      outputDynamicRange: "unknown",
+      outputVerification: "unknown",
+      toneMapping: "unknown",
+    };
+    this.emit("surfaceChange", null);
+    this.emit("diagnosticsChange", this.getRenderingDiagnostics());
 
     // Remove all listeners
     document.removeEventListener(
@@ -7481,7 +7541,6 @@ export class MoviPlayer extends EventEmitter<PlayerEventMap> {
     );
     window.removeEventListener("online", this.handleNetworkOnline);
     this.removeAllListeners();
-    this.surface = null;
 
     Logger.info(TAG, "Player destroyed");
   }

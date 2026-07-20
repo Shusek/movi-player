@@ -205,7 +205,7 @@ em++ "$OBJDIR"/*.o \
     -s DISABLE_EXCEPTION_THROWING=1 \
     -s ALLOW_TABLE_GROWTH=1 \
     -s INVOKE_RUN=0 \
-    -s SINGLE_FILE=1 \
+    -s SINGLE_FILE=0 \
     -s LEGACY_RUNTIME=0 \
     -g0 \
     -s MINIFY_HTML=0 \

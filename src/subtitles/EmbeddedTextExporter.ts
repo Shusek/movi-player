@@ -29,6 +29,7 @@ export interface EmbeddedTextExportSource {
   source: SourceAdapter;
   trackId: number;
   wasmBinary?: Uint8Array;
+  assetBaseUrl?: string;
   options?: EmbeddedTextExportOptions;
 }
 
@@ -259,6 +260,7 @@ export async function exportEmbeddedTextTrackFromSource({
   source,
   trackId,
   wasmBinary,
+  assetBaseUrl,
   options = {},
 }: EmbeddedTextExportSource): Promise<EmbeddedTextTrackExport> {
   throwIfAborted(options.signal);
@@ -272,7 +274,12 @@ export async function exportEmbeddedTextTrackFromSource({
     });
   }
 
-  const demuxer = new Demuxer(fork, wasmBinary, true);
+  const demuxer = new Demuxer(
+    fork,
+    wasmBinary,
+    true,
+    assetBaseUrl,
+  );
   try {
     const mediaInfo = await demuxer.open();
     throwIfAborted(options.signal);

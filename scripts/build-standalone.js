@@ -15,6 +15,7 @@ const __dirname = dirname(__filename);
 const rootDir = resolve(__dirname, '..');
 
 const entries = [
+  { name: 'engine', path: 'src/engine.ts' },
   { name: 'demuxer', path: 'src/demuxer.ts' },
   { name: 'player', path: 'src/player.ts' },
   { name: 'element', path: 'src/element.ts' },
@@ -134,6 +135,14 @@ async function buildEntry(entry, format) {
           ? [movilogRewritePlugin()]
           : [movilogRewritePlugin(), terser(terserConfig)],
         output: {
+          // Keep optional engines and the Emscripten glue lazy in browser ESM.
+          // CJS stays self-contained because Node's package mode cannot safely
+          // require generated `.js` chunks from this ESM package.
+          inlineDynamicImports: format !== 'es',
+          chunkFileNames:
+            format === 'es'
+              ? 'chunks/[name]-[hash].js'
+              : '[name]-[hash].cjs',
           globals: {},
           assetFileNames: (assetInfo) => {
             if (assetInfo.name?.endsWith('.wasm')) {
@@ -145,6 +154,7 @@ async function buildEntry(entry, format) {
       },
       sourcemap: false,
       minify: false,
+      assetsInlineLimit: 0,
       emptyOutDir: false,
       chunkSizeWarningLimit: 10000,
       outDir: resolve(rootDir, 'dist'),
