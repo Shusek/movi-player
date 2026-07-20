@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> This branch is the KMediaPlayer integration fork of Movi Player. The
+> headless package is published as `@shusek/movi-player`; see
+> [FORK.md](FORK.md) for the fork contract, upstream base, and added APIs.
+
 <div align="center">
 
 <img src="docs/images/banner.png" alt="Movi Player" width="100%" />
