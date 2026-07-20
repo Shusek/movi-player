@@ -22,6 +22,11 @@
       "require": "./dist/player.cjs",
       "types": "./dist/player.d.ts"
     },
+    "./engine": {
+      "import": "./dist/engine.js",
+      "require": "./dist/engine.cjs",
+      "types": "./dist/engine.d.ts"
+    },
     "./element": {
       "import": "./dist/element.js",
       "require": "./dist/element.cjs",
@@ -32,16 +37,25 @@
     "dist",
     "README.md",
     "AGENTS.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE",
+    "FORK.md",
+    "LGPL_RELINKING.md",
+    "compose.yaml",
+    "docker/Dockerfile",
+    "docker/build-ffmpeg.sh",
+    "wasm"
   ],
   "scripts": {
     "build": "npm run build:wasm && npm run build:ts",
     "build:ts": "node scripts/check-wasm.js && tsc && node scripts/build-standalone.js",
+    "check:bundle": "node scripts/check-bundle.mjs",
     "release": "node scripts/release.mjs",
     "build:wasm": "mkdir -p dist/wasm && docker compose run --rm build",
     "build:wasm:force": "mkdir -p dist/wasm && docker compose run --rm -e FORCE_FFMPEG=true -e FORCE_DAV1D=true build",
     "dev": "vite --open /dev/",
     "test": "vitest",
+    "check:licenses": "node scripts/check-licenses.mjs",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build && npm run typecheck",
