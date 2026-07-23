@@ -173,9 +173,15 @@ async function buildAll() {
     console.log(`✓ ${entry.name} built\n`);
   }
 
-  // Emscripten resolves movi.wasm next to its emitted lazy JS chunk.
+  // Emscripten resolves movi.wasm next to its external lazy glue module.
+  // Keeping the generated module out of Rollup's graph is intentional: Vite
+  // library mode otherwise inlines the Wasm binary as a data URL.
   const chunkDirectory = resolve(rootDir, 'dist', 'chunks');
   await mkdir(chunkDirectory, { recursive: true });
+  await copyFile(
+    resolve(rootDir, 'dist', 'wasm', 'movi.js'),
+    resolve(chunkDirectory, 'movi.js'),
+  );
   await copyFile(
     resolve(rootDir, 'dist', 'wasm', 'movi.wasm'),
     resolve(chunkDirectory, 'movi.wasm'),

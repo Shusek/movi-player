@@ -36,6 +36,7 @@ function brotliSize(bytes) {
 
 const enginePath = resolve(dist, "engine.js");
 const wasmPath = resolve(dist, "wasm", "movi.wasm");
+const lazyGluePath = resolve(dist, "chunks", "movi.js");
 const lazyWasmPath = resolve(dist, "chunks", "movi.wasm");
 const engine = await readFile(enginePath);
 const allFiles = await filesBelow(dist);
@@ -111,7 +112,26 @@ if (chunks.length < 4) {
 }
 
 const wasmStats = await stat(wasmPath);
+const lazyGlue = await readFile(lazyGluePath);
+const lazyGlueStats = await stat(lazyGluePath);
 const lazyWasmStats = await stat(lazyWasmPath);
+if (lazyGlueStats.size < 16 * 1024 || lazyGlueStats.size > 1024 * 1024) {
+  throw new Error(
+    "Bundle check failed: external Emscripten glue is missing or unexpectedly large",
+  );
+}
+if (lazyGlue.includes("data:application/wasm;base64")) {
+  throw new Error(
+    "Bundle check failed: Emscripten glue contains an inlined WebAssembly data URL",
+  );
+}
+for (const { source } of engineGraph) {
+  if (source.includes("data:application/wasm;base64")) {
+    throw new Error(
+      "Bundle check failed: WebAssembly was inlined into the engine module graph",
+    );
+  }
+}
 if (wasmStats.size < 1024 * 1024) {
   throw new Error(
     "Bundle check failed: split FFmpeg WebAssembly asset is missing or too small",
@@ -145,6 +165,10 @@ const report = {
   wasm: {
     bytes: wasmStats.size,
     brotliBytes: brotliSize(await readFile(wasmPath)),
+  },
+  emscriptenGlue: {
+    bytes: lazyGlueStats.size,
+    brotliBytes: brotliSize(lazyGlue),
   },
   chunks: await Promise.all(
     chunks.map(async (path) => {

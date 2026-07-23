@@ -59,10 +59,15 @@ async function moduleFactory(
   }
 
   if (!bundledFactoryPromise) {
-    // A static string keeps the generated Emscripten glue code-split while
-    // allowing Rollup to emit a deterministic lazy chunk.
-    // @ts-ignore - generated during build:wasm.
-    bundledFactoryPromise = import('../../dist/wasm/movi.js').then(
+    // Keep Emscripten's glue outside Rollup's module graph. Vite library mode
+    // otherwise converts `new URL("movi.wasm", import.meta.url)` inside the
+    // generated module into a multi-megabyte data URL, duplicating the split
+    // movi.wasm asset. The release build copies both sibling files into chunks/.
+    const moduleUrl = new URL(
+      ['.', 'movi.js'].join('/'),
+      import.meta.url,
+    ).href;
+    bundledFactoryPromise = import(/* @vite-ignore */ moduleUrl).then(
       (module) => module.default as MoviModuleFactory,
     );
   }
