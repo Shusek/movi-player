@@ -12,6 +12,7 @@ import {
   PACKET_INFO_OFFSETS,
 } from "./types";
 import { Logger, LogLevel } from "../utils/Logger";
+import type { Chapter } from "../types";
 
 const TAG = "Bindings";
 
@@ -62,6 +63,13 @@ export interface DataSource {
 
   /** Read data at offset */
   read(offset: number, size: number): Promise<Uint8Array>;
+}
+
+export interface WasmAttachment {
+  streamIndex: number;
+  name: string;
+  mimeType: string;
+  data: Uint8Array;
 }
 
 /**
@@ -665,15 +673,89 @@ export class WasmBindings {
   }
 
   /**
+   * Copy bounded Matroska attachment streams out of the already-open demuxer.
+   * A total limit prevents a hostile file from forcing unbounded WASM/JS
+   * allocations while still covering realistic embedded font collections.
+   */
+  getAttachments(
+    maxTotalBytes: number = 32 * 1024 * 1024,
+    maxCount: number = 64,
+    maxAttachmentBytes: number = 16 * 1024 * 1024,
+  ): WasmAttachment[] {
+    if (!this.contextPtr) return [];
+    const getCount = this.module._movi_get_attachment_count;
+    const getStreamIndex = this.module._movi_get_attachment_stream_index;
+    const getSize = this.module._movi_get_attachment_size;
+    const getName = this.module._movi_get_attachment_name;
+    const getMimeType = this.module._movi_get_attachment_mime_type;
+    const getData = this.module._movi_get_attachment_data;
+    if (
+      !getCount ||
+      !getStreamIndex ||
+      !getSize ||
+      !getName ||
+      !getMimeType ||
+      !getData
+    ) {
+      return [];
+    }
+
+    const count = Math.min(Math.max(0, getCount(this.contextPtr)), maxCount);
+    const attachments: WasmAttachment[] = [];
+    const namePtr = this.module._malloc(512);
+    const mimePtr = this.module._malloc(128);
+    let totalBytes = 0;
+    try {
+      for (let index = 0; index < count; index++) {
+        const size = getSize(this.contextPtr, index);
+        if (
+          size <= 0 ||
+          size > maxAttachmentBytes ||
+          totalBytes + size > maxTotalBytes
+        ) {
+          continue;
+        }
+        const dataPtr = this.module._malloc(size);
+        if (!dataPtr) continue;
+        try {
+          this.module.HEAPU8.fill(0, namePtr, namePtr + 512);
+          this.module.HEAPU8.fill(0, mimePtr, mimePtr + 128);
+          getName(this.contextPtr, index, namePtr, 512);
+          getMimeType(this.contextPtr, index, mimePtr, 128);
+          const copied = getData(this.contextPtr, index, dataPtr, size);
+          if (copied <= 0 || totalBytes + copied > maxTotalBytes) continue;
+          const data = new Uint8Array(copied);
+          data.set(this.module.HEAPU8.subarray(dataPtr, dataPtr + copied));
+          attachments.push({
+            streamIndex: getStreamIndex(this.contextPtr, index),
+            name: readString(this.module, namePtr, 512),
+            mimeType: readString(this.module, mimePtr, 128),
+            data,
+          });
+          totalBytes += copied;
+        } finally {
+          this.module._free(dataPtr);
+        }
+      }
+    } finally {
+      this.module._free(namePtr);
+      this.module._free(mimePtr);
+    }
+    return attachments;
+  }
+
+  /**
    * Get all chapters from the media
    */
-  getChapters(): Array<{ title: string; start: number; end: number }> {
+  getChapters(): Chapter[] {
     if (!this.contextPtr) return [];
     const count = this.getChapterCount();
     if (count <= 0) return [];
 
-    const chapters: Array<{ title: string; start: number; end: number }> = [];
+    const chapters: Chapter[] = [];
     const titleBufPtr = this.module._malloc(256);
+    const idBufPtr = this.module._malloc(64);
+    const languageBufPtr = this.module._malloc(32);
 
     try {
       for (let i = 0; i < count; i++) {
@@ -683,18 +765,47 @@ export class WasmBindings {
         // Get title
         this.module.HEAPU8.fill(0, titleBufPtr, titleBufPtr + 256);
         this.module._movi_get_chapter_title(this.contextPtr, i, titleBufPtr, 256);
-        const titleBytes = this.module.HEAPU8.subarray(titleBufPtr, titleBufPtr + 256);
-        const nullIdx = titleBytes.indexOf(0);
-        const title = new TextDecoder().decode(titleBytes.slice(0, nullIdx > 0 ? nullIdx : 256));
+        const title = readString(this.module, titleBufPtr, 256);
+        this.module.HEAPU8.fill(0, idBufPtr, idBufPtr + 64);
+        this.module._movi_get_chapter_id?.(
+          this.contextPtr,
+          i,
+          idBufPtr,
+          64,
+        );
+        this.module.HEAPU8.fill(
+          0,
+          languageBufPtr,
+          languageBufPtr + 32,
+        );
+        this.module._movi_get_chapter_language?.(
+          this.contextPtr,
+          i,
+          languageBufPtr,
+          32,
+        );
+        const language =
+          readString(this.module, languageBufPtr, 32) || undefined;
+        const resolvedTitle = title || `Chapter ${i + 1}`;
 
         chapters.push({
-          title: title || `Chapter ${i + 1}`,
+          id: readString(this.module, idBufPtr, 64) || `chapter-${i}`,
+          title: resolvedTitle,
           start: start >= 0 ? start : 0,
           end: end >= 0 ? end : 0,
+          language,
+          labels: [{ text: resolvedTitle, language }],
+          isHidden:
+            this.module._movi_get_chapter_hidden?.(
+              this.contextPtr,
+              i,
+            ) === 1,
         });
       }
     } finally {
       this.module._free(titleBufPtr);
+      this.module._free(idBufPtr);
+      this.module._free(languageBufPtr);
     }
 
     return chapters;

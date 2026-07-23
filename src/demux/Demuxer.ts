@@ -24,6 +24,7 @@ import {
   type StreamInfo,
   type DataSource,
 } from "../wasm";
+import type { WasmAttachment } from "../wasm/bindings";
 import { CodecParser } from "../decode/CodecParser";
 import { Logger } from "../utils/Logger";
 
@@ -62,6 +63,7 @@ export class Demuxer {
   private isOpened: boolean = false;
   private wasmBinary?: Uint8Array;
   private useNewWasmInstance: boolean = false;
+  private assetBaseUrl?: string;
 
   /**
    * @param source - Data source adapter
@@ -72,10 +74,12 @@ export class Demuxer {
     source: SourceAdapter,
     wasmBinary?: Uint8Array,
     useNewWasmInstance: boolean = false,
+    assetBaseUrl?: string,
   ) {
     this.source = source;
     this.wasmBinary = wasmBinary;
     this.useNewWasmInstance = useNewWasmInstance;
+    this.assetBaseUrl = assetBaseUrl;
   }
 
   /**
@@ -87,9 +91,15 @@ export class Demuxer {
     // Load WASM module - use isolated instance for preview to avoid memory conflicts
     if (this.useNewWasmInstance) {
       Logger.debug(TAG, "Using isolated WASM instance");
-      this.module = await loadWasmModuleNew({ wasmBinary: this.wasmBinary });
+      this.module = await loadWasmModuleNew({
+        wasmBinary: this.wasmBinary,
+        assetBaseUrl: this.assetBaseUrl,
+      });
     } else {
-      this.module = await loadWasmModule({ wasmBinary: this.wasmBinary });
+      this.module = await loadWasmModule({
+        wasmBinary: this.wasmBinary,
+        assetBaseUrl: this.assetBaseUrl,
+      });
     }
     this.bindings = new WasmBindings(this.module);
 
@@ -487,6 +497,20 @@ export class Demuxer {
     return this.duration;
   }
 
+  getAttachments(
+    maxTotalBytes?: number,
+    maxCount?: number,
+    maxAttachmentBytes?: number,
+  ): WasmAttachment[] {
+    return (
+      this.bindings?.getAttachments(
+        maxTotalBytes,
+        maxCount,
+        maxAttachmentBytes,
+      ) ?? []
+    );
+  }
+
   /**
    * Close and cleanup
    */
@@ -520,11 +544,15 @@ export class Demuxer {
     source: SourceAdapter,
     fileSize: number,
     wasmBinary?: Uint8Array,
+    assetBaseUrl?: string,
   ): Promise<Uint8Array | null> {
     if (fileSize <= 0) return null;
     let bindings: ThumbnailBindings | null = null;
     try {
-      const module = await loadWasmModuleNew({ wasmBinary });
+      const module = await loadWasmModuleNew({
+        wasmBinary,
+        assetBaseUrl,
+      });
       bindings = new ThumbnailBindings(module);
       bindings.setDataSource({
         read: async (offset: number, size: number): Promise<Uint8Array> =>

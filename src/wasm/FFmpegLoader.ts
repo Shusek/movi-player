@@ -4,15 +4,19 @@
 
 import type { MoviWasmModule } from './types';
 import { Logger } from '../utils/Logger';
-// Static import of the generated module (bundled into index.js)
-// @ts-ignore - movi.js is Emscripten-generated, no types available
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-import createMoviModule from '../../dist/wasm/movi.js';
 
 const TAG = 'FFmpegLoader';
 
 let modulePromise: Promise<MoviWasmModule> | null = null;
 let loadedModule: MoviWasmModule | null = null;
+type MoviModuleFactory = (
+  options: Record<string, unknown>,
+) => Promise<MoviWasmModule>;
+let bundledFactoryPromise: Promise<MoviModuleFactory> | null = null;
+const externalFactoryPromises = new Map<
+  string,
+  Promise<MoviModuleFactory>
+>();
 
 // Embedded WASM binary (will be set if WASM is bundled)
 let embeddedWasmBinary: Uint8Array | null = null;
@@ -20,6 +24,80 @@ let embeddedWasmBinary: Uint8Array | null = null;
 export interface LoaderOptions {
   wasmBinary?: Uint8Array; // Embedded WASM binary data (required if embeddedWasmBinary not set)
   workerPath?: string;
+  /** Directory containing `wasm/movi.js` and `wasm/movi.wasm`. */
+  assetBaseUrl?: string;
+}
+
+function resolvedBaseUrl(baseUrl: string): string {
+  const runtimeBase =
+    typeof document !== 'undefined'
+      ? document.baseURI
+      : typeof location !== 'undefined'
+        ? location.href
+        : import.meta.url;
+  const resolved = new URL(baseUrl, runtimeBase);
+  if (!resolved.pathname.endsWith('/')) {
+    resolved.pathname = `${resolved.pathname}/`;
+  }
+  return resolved.href;
+}
+
+async function moduleFactory(
+  assetBaseUrl?: string,
+): Promise<MoviModuleFactory> {
+  if (assetBaseUrl) {
+    const base = resolvedBaseUrl(assetBaseUrl);
+    let operation = externalFactoryPromises.get(base);
+    if (!operation) {
+      const moduleUrl = new URL('wasm/movi.js', base).href;
+      operation = import(/* @vite-ignore */ moduleUrl).then(
+        (module) => module.default as MoviModuleFactory,
+      );
+      externalFactoryPromises.set(base, operation);
+    }
+    return operation;
+  }
+
+  if (!bundledFactoryPromise) {
+    // A static string keeps the generated Emscripten glue code-split while
+    // allowing Rollup to emit a deterministic lazy chunk.
+    // @ts-ignore - generated during build:wasm.
+    bundledFactoryPromise = import('../../dist/wasm/movi.js').then(
+      (module) => module.default as MoviModuleFactory,
+    );
+  }
+  return bundledFactoryPromise;
+}
+
+function createModuleOptions(
+  options: LoaderOptions,
+  wasmBinary: Uint8Array | null,
+  onAbort?: (reason: unknown) => void,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {
+    print: (text: string) => {
+      if (text && text.trim()) Logger.debug('WASM', text);
+    },
+    printErr: (text: string) => {
+      if (text && text.trim()) Logger.debug('WASM', text);
+    },
+  };
+  if (wasmBinary) result.wasmBinary = wasmBinary;
+  if (onAbort) result.onAbort = onAbort;
+  if (options.assetBaseUrl) {
+    const wasmDirectory = new URL(
+      'wasm/',
+      resolvedBaseUrl(options.assetBaseUrl),
+    );
+    result.locateFile = (path: string) =>
+      options.workerPath && path.endsWith('.worker.js')
+        ? options.workerPath
+        : new URL(path.split('/').pop() || path, wasmDirectory).href;
+  } else if (options.workerPath) {
+    result.locateFile = (path: string) =>
+      path.endsWith('.worker.js') ? options.workerPath : path;
+  }
+  return result;
 }
 
 /**
@@ -52,40 +130,17 @@ export async function loadWasmModule(options: LoaderOptions = {}): Promise<MoviW
   modulePromise = (async () => {
     Logger.info(TAG, 'Loading WASM module...');
     
-    // With SINGLE_FILE, WASM is embedded in movi.js, so wasmBinary is optional
+    // The split WASM asset is fetched only when the player opens media.
     const wasmBinary = options.wasmBinary || embeddedWasmBinary;
     
     try {
-      // Static import - movi.js is bundled into index.js
-      const createModule = createMoviModule;
-      
-      // Create module - with SINGLE_FILE, WASM is embedded, so wasmBinary is optional
-      const moduleOptions: any = {
-        print: (text: string) => {
-          if (text && text.trim()) {
-            Logger.debug('WASM', text);
-          }
-        },
-        printErr: (text: string) => {
-          if (text && text.trim()) {
-            // FFmpeg uses stderr for all logging, including info/debug
-            // Map to debug to avoid flooding console with "errors"
-            Logger.debug('WASM', text);
-          }
-        },
-        // Emscripten calls this the instant the module traps (abort()). This is
-        // the CACHED singleton the main demuxer reuses, so once it's dead every
-        // later open fails "File is corrupted" until a page reload — drop it from
-        // the cache here so the next loadWasmModule() rebuilds a live one in-page.
-        onAbort: (what: unknown) => {
+      const createModule = await moduleFactory(options.assetBaseUrl);
+      const module = await createModule(
+        createModuleOptions(options, wasmBinary, (what: unknown) => {
           Logger.error(TAG, `WASM aborted — discarding dead cached module: ${what}`);
           resetWasmModule();
-        },
-      };
-      if (wasmBinary) {
-        moduleOptions.wasmBinary = wasmBinary;
-      }
-      const module: MoviWasmModule = await createModule(moduleOptions);
+        }),
+      );
       
       Logger.info(TAG, 'WASM module loaded successfully');
       
@@ -118,26 +173,11 @@ export async function loadWasmModuleNew(options: LoaderOptions = {}): Promise<Mo
   const wasmBinary = options.wasmBinary || embeddedWasmBinary;
   
   try {
-    const createModule = createMoviModule;
-    
-    const moduleOptions: any = {
-      print: (text: string) => {
-        if (text && text.trim()) {
-          Logger.debug('WASM', text);
-        }
-      },
-      printErr: (text: string) => {
-        if (text && text.trim()) {
-          Logger.debug('WASM', text);
-        }
-      }
-    };
-    if (wasmBinary) {
-      moduleOptions.wasmBinary = wasmBinary;
-    }
-    
+    const createModule = await moduleFactory(options.assetBaseUrl);
     // Always create fresh instance - no caching
-    const module: MoviWasmModule = await createModule(moduleOptions);
+    const module = await createModule(
+      createModuleOptions(options, wasmBinary),
+    );
     
     Logger.info(TAG, 'NEW WASM module instance loaded');
     return module;

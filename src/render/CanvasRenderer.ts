@@ -237,6 +237,11 @@ export class CanvasRenderer {
   private _subtitleRerenderRafId: number | null = null;
   private subtitleCues: SubtitleCue[] = [];
   private subtitleOverlay: HTMLElement | null = null;
+  // A host renderer (for example JASSUB) shares the letterbox-aware overlay
+  // element with CanvasRenderer. While it owns the active track we must keep
+  // updating the overlay geometry, but must not hide it or replace its DOM on
+  // every presentation frame.
+  private externalSubtitleRendererActive: boolean = false;
   /** The subtitle overlay element — absolutely positioned over the visible video
    *  (letterbox-aware). Handed to a host SubtitleRenderer as a mount point. */
   getSubtitleOverlay(): HTMLElement | null {
@@ -2607,6 +2612,26 @@ export class CanvasRenderer {
   }
 
   /**
+   * Preserve the letterbox-aware overlay for a host subtitle renderer without
+   * allowing the built-in cue renderer to clear or hide the host's canvas.
+   */
+  setExternalSubtitleRendererActive(active: boolean): void {
+    if (this.externalSubtitleRendererActive === active) return;
+    this.externalSubtitleRendererActive = active;
+    this.subtitleCues = [];
+    this.activeSubtitleCue = null;
+    this._lastRenderedSubtitleKey = "";
+    this._lastRenderedSubtitlePlain = "";
+    if (!this.subtitleOverlay) return;
+    this.subtitleOverlay.innerHTML = "";
+    if (active) {
+      this.subtitleOverlay.style.display = "block";
+    } else {
+      this.subtitleOverlay.style.display = "none";
+    }
+  }
+
+  /**
    * Tag the subtitle overlay with the source format. The styled black
    * backdrop is opt-in and only painted for WebVTT cues — that's the
    * karaoke-paced format from our YouTube proxy where the box reads as
@@ -3044,7 +3069,7 @@ export class CanvasRenderer {
     this._lastRenderedSubtitleKey = "";
     this._lastRenderedSubtitlePlain = "";
     // Clear all subtitle elements from overlay if it exists
-    if (this.subtitleOverlay) {
+    if (this.subtitleOverlay && !this.externalSubtitleRendererActive) {
       this.subtitleOverlay.innerHTML = "";
     }
   }
@@ -3173,6 +3198,8 @@ export class CanvasRenderer {
    * Note: updateActiveSubtitle() should be called before this method
    */
   private renderSubtitles(): void {
+    if (this.externalSubtitleRendererActive) return;
+
     // Get actual display dimensions (not buffer dimensions) for overlay
     // If rotated 90/270, the buffer dimensions (this.width/height) are swapped relative to the screen
     // Subtitles overlaid via HTML should match the SCREEN/CONTAINER orientation
