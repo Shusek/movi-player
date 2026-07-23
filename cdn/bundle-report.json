@@ -1,0 +1,114 @@
+{
+  "generatedAt": "2026-07-23T11:53:31.200Z",
+  "entries": {
+    "engine.js": {
+      "bytes": 224,
+      "brotliBytes": 153,
+      "initialGraph": {
+        "files": [
+          "engine.js",
+          "chunks/engine-B6Hf6YUs.js"
+        ],
+        "bytes": 445745,
+        "brotliBytes": 83274
+      }
+    },
+    "engine.cjs": {
+      "bytes": 3589526,
+      "brotliBytes": 666014
+    },
+    "player.js": {
+      "bytes": 449693,
+      "brotliBytes": 83891
+    },
+    "element.js": {
+      "bytes": 1010214,
+      "brotliBytes": 172995
+    }
+  },
+  "wasm": {
+    "bytes": 5616583,
+    "brotliBytes": 1703548
+  },
+  "emscriptenGlue": {
+    "bytes": 87968,
+    "brotliBytes": 20610
+  },
+  "chunks": [
+    {
+      "file": "chunks/DASHPlayerWrapper-0u0lUahi.js",
+      "bytes": 1172418,
+      "brotliBytes": 223676
+    },
+    {
+      "file": "chunks/DASHPlayerWrapper-CQHw5AgU.js",
+      "bytes": 1172417,
+      "brotliBytes": 223711
+    },
+    {
+      "file": "chunks/DASHPlayerWrapper-CvTnrh93.js",
+      "bytes": 1172385,
+      "brotliBytes": 223754
+    },
+    {
+      "file": "chunks/DASHPlayerWrapper-YtoHRelU.js",
+      "bytes": 1172416,
+      "brotliBytes": 223681
+    },
+    {
+      "file": "chunks/HLSPlayerWrapper-C2zm55Jo.js",
+      "bytes": 726005,
+      "brotliBytes": 148350
+    },
+    {
+      "file": "chunks/HLSPlayerWrapper-CPQNUvXO.js",
+      "bytes": 726004,
+      "brotliBytes": 148401
+    },
+    {
+      "file": "chunks/HLSPlayerWrapper-CXjzdo0U.js",
+      "bytes": 726006,
+      "brotliBytes": 148408
+    },
+    {
+      "file": "chunks/HLSPlayerWrapper-DrElvoya.js",
+      "bytes": 725973,
+      "brotliBytes": 148373
+    },
+    {
+      "file": "chunks/ShakaPlayerWrapper-3MwKZCbC.js",
+      "bytes": 1193473,
+      "brotliBytes": 230606
+    },
+    {
+      "file": "chunks/ShakaPlayerWrapper-CwvLR1yJ.js",
+      "bytes": 1193475,
+      "brotliBytes": 230484
+    },
+    {
+      "file": "chunks/ShakaPlayerWrapper-DFyZsKFp.js",
+      "bytes": 1193442,
+      "brotliBytes": 230574
+    },
+    {
+      "file": "chunks/ShakaPlayerWrapper-Mp8IWXXZ.js",
+      "bytes": 1193474,
+      "brotliBytes": 230534
+    },
+    {
+      "file": "chunks/engine-B6Hf6YUs.js",
+      "bytes": 445521,
+      "brotliBytes": 83121
+    },
+    {
+      "file": "chunks/movi.js",
+      "bytes": 87968,
+      "brotliBytes": 20610
+    },
+    {
+      "file": "chunks/movi.wasm",
+      "bytes": 5616583,
+      "brotliBytes": 1703548
+    }
+  ]
+}
