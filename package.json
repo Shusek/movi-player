@@ -1,6 +1,6 @@
 {
-  "name": "movi-player",
-  "version": "0.3.5",
+  "name": "@shusek/movi-player",
+  "version": "0.3.5-kmp.2",
   "description": "Play MKV, HEVC, AV1, HDR videos in the browser. WebCodecs + FFmpeg WASM player with encrypted playback, chapters, subtitles, multi-audio tracks. No server transcoding needed.",
   "type": "module",
   "main": "dist/index.js",
@@ -21,6 +21,11 @@
       "import": "./dist/player.js",
       "require": "./dist/player.cjs",
       "types": "./dist/player.d.ts"
+    },
+    "./engine": {
+      "import": "./dist/engine.js",
+      "require": "./dist/engine.cjs",
+      "types": "./dist/engine.d.ts"
     },
     "./element": {
       "import": "./dist/element.js",
@@ -47,7 +52,14 @@
     "dist",
     "README.md",
     "AGENTS.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE",
+    "FORK.md",
+    "LGPL_RELINKING.md",
+    "compose.yaml",
+    "docker/Dockerfile",
+    "docker/build-ffmpeg.sh",
+    "wasm"
   ],
   "peerDependencies": {
     "react": ">=17",
@@ -62,11 +74,13 @@
   "scripts": {
     "build": "npm run build:wasm && npm run build:ts",
     "build:ts": "node scripts/check-wasm.js && tsc && node scripts/build-standalone.js && node scripts/build-wrappers.mjs",
+    "check:bundle": "node scripts/check-bundle.mjs",
     "release": "node scripts/release.mjs",
     "build:wasm": "mkdir -p dist/wasm && docker compose run --rm build",
     "build:wasm:force": "mkdir -p dist/wasm && docker compose run --rm -e FORCE_FFMPEG=true -e FORCE_DAV1D=true build",
     "dev": "vite --open /dev/",
     "test": "vitest",
+    "check:licenses": "node scripts/check-licenses.mjs",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build && npm run typecheck",
@@ -143,15 +157,18 @@
     "shaka-player-alternative"
   ],
   "author": "Ujjawal Kashyap <mr.ujjwalg@gmail.com> (https://github.com/mrujjwalg)",
+  "contributors": [
+    "KMediaPlayer contributors (https://github.com/Shusek/KMediaPlayer)"
+  ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mrujjwalg/movi-player.git"
+    "url": "https://github.com/Shusek/movi-player.git"
   },
   "bugs": {
-    "url": "https://github.com/mrujjwalg/movi-player/issues"
+    "url": "https://github.com/Shusek/movi-player/issues"
   },
-  "homepage": "https://moviplayer.com",
+  "homepage": "https://github.com/Shusek/movi-player",
   "devDependencies": {
     "@playwright/test": "^1.40.0",
     "@rollup/plugin-terser": "^1.0.0",

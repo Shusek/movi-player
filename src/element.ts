@@ -24,6 +24,10 @@ export type {
   AudioTrack,
   SubtitleTrack,
   SubtitleRenderer,
+  TrackSelectionKind,
+  TrackSelectionRequest,
+  TrackSelectionStatus,
+  TrackSelectionOutcome,
   SubtitleCue,
   SourceConfig,
   CacheConfig,
@@ -38,10 +42,22 @@ export type {
   DecodedAudioFrame,
   PlayerState,
   PlayerEventMap,
+  PlayerSurface,
+  RenderingBackend,
+  RenderingDiagnostics,
+  Chapter,
 } from './types';
 
 // Utilities
 export { Logger, LogLevel } from './utils/Logger';
+export {
+  MoviError,
+  redactSensitiveText,
+  redactUrl,
+  type MoviErrorCategory,
+  type MoviErrorCode,
+  type MoviErrorInit,
+} from './errors/MoviError';
 export { Time, TIME_BASE } from './utils/Time';
 
 // Events

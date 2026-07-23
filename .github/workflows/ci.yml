@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "agent/**"
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Types, unit tests, licenses
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test -- --run
+      - run: npm run check:licenses
+
+  distribution:
+    name: WASM and split distribution
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: |
+            dist/ffmpeg
+            dist/dav1d
+          key: ffmpeg-wasm-${{ runner.os }}-${{ hashFiles('docker/Dockerfile', 'docker/build-ffmpeg.sh') }}
+      - run: npm ci
+      - run: npm run build:wasm
+      - run: npm run build:ts
+      - run: npm run check:bundle
+      - run: mkdir -p artifacts
+      - run: npm pack --pack-destination artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: movi-player-distribution
+          path: |
+            dist
+            artifacts/*.tgz
+          if-no-files-found: error
+          retention-days: 14

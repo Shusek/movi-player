@@ -46,6 +46,15 @@ export interface MoviWasmModule {
   _movi_get_chapter_start: (ctx: number, index: number) => number;
   _movi_get_chapter_end: (ctx: number, index: number) => number;
   _movi_get_chapter_title: (ctx: number, index: number, buffer: number, bufferSize: number) => number;
+  _movi_get_chapter_id?: (ctx: number, index: number, buffer: number, bufferSize: number) => number;
+  _movi_get_chapter_language?: (ctx: number, index: number, buffer: number, bufferSize: number) => number;
+  _movi_get_chapter_hidden?: (ctx: number, index: number) => number;
+  _movi_get_attachment_count?: (ctx: number) => number;
+  _movi_get_attachment_stream_index?: (ctx: number, index: number) => number;
+  _movi_get_attachment_size?: (ctx: number, index: number) => number;
+  _movi_get_attachment_name?: (ctx: number, index: number, buffer: number, bufferSize: number) => number;
+  _movi_get_attachment_mime_type?: (ctx: number, index: number, buffer: number, bufferSize: number) => number;
+  _movi_get_attachment_data?: (ctx: number, index: number, buffer: number, bufferSize: number) => number;
   _movi_get_stream_info: (
     ctx: number,
     streamIndex: number,

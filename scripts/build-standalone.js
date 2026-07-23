@@ -9,12 +9,14 @@ import dts from 'vite-plugin-dts';
 import terser from '@rollup/plugin-terser';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { copyFile, mkdir } from 'fs/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = resolve(__dirname, '..');
 
 const entries = [
+  { name: 'engine', path: 'src/engine.ts' },
   { name: 'demuxer', path: 'src/demuxer.ts' },
   { name: 'player', path: 'src/player.ts' },
   { name: 'element', path: 'src/element.ts' },
@@ -134,6 +136,11 @@ async function buildEntry(entry, format) {
           ? [movilogRewritePlugin()]
           : [movilogRewritePlugin(), terser(terserConfig)],
         output: {
+          inlineDynamicImports: format !== 'es',
+          chunkFileNames:
+            format === 'es'
+              ? 'chunks/[name]-[hash].js'
+              : '[name]-[hash].cjs',
           globals: {},
           assetFileNames: (assetInfo) => {
             if (assetInfo.name?.endsWith('.wasm')) {
@@ -145,6 +152,7 @@ async function buildEntry(entry, format) {
       },
       sourcemap: false,
       minify: false,
+      assetsInlineLimit: 0,
       emptyOutDir: false,
       chunkSizeWarningLimit: 10000,
       outDir: resolve(rootDir, 'dist'),
@@ -164,6 +172,14 @@ async function buildAll() {
 
     console.log(`✓ ${entry.name} built\n`);
   }
+
+  // Emscripten resolves movi.wasm next to its emitted lazy JS chunk.
+  const chunkDirectory = resolve(rootDir, 'dist', 'chunks');
+  await mkdir(chunkDirectory, { recursive: true });
+  await copyFile(
+    resolve(rootDir, 'dist', 'wasm', 'movi.wasm'),
+    resolve(chunkDirectory, 'movi.wasm'),
+  );
 
   console.log('✓ All standalone bundles built successfully!');
 }

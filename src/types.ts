@@ -2,6 +2,8 @@
  * Movi Types - Core type definitions for the streaming video library
  */
 
+import type { MoviError } from "./errors/MoviError";
+
 // ============================================================================
 // Track Types
 // ============================================================================
@@ -18,6 +20,8 @@ export interface Track {
   level?: number;
   language?: string;
   label?: string;
+  isDefault?: boolean;
+  isForced?: boolean;
   // Video-specific
   width?: number;
   height?: number;
@@ -69,6 +73,31 @@ export interface AudioTrack extends Track {
 export interface SubtitleTrack extends Track {
   type: "subtitle";
   subtitleType: "text" | "image";
+}
+
+export type TrackSelectionKind = "video" | "audio" | "subtitle";
+
+export type TrackSelectionRequest =
+  | { kind: "video"; trackId: number | null }
+  | { kind: "audio"; trackId: number | null }
+  | { kind: "subtitle"; trackId: number | null };
+
+export type TrackSelectionStatus =
+  | "selected"
+  | "unchanged"
+  | "auto"
+  | "disabled"
+  | "not-found"
+  | "not-supported"
+  | "failed"
+  | "superseded";
+
+export interface TrackSelectionOutcome {
+  kind: TrackSelectionKind;
+  status: TrackSelectionStatus;
+  requestedTrackId: number | null;
+  activeTrack: Track | null;
+  error?: MoviError;
 }
 
 // ============================================================================
@@ -178,6 +207,8 @@ export interface PlayerConfig {
   cache?: CacheConfig;
   canvas?: HTMLCanvasElement | OffscreenCanvas;
   wasmBinary?: Uint8Array; // Embedded WASM binary data
+  /** Optional directory containing externally hosted `wasm/` assets. */
+  assetBaseUrl?: string;
   enablePreviews?: boolean; // Enable thumbnail preview pipeline (default: false)
   frameRate?: number; // Override frame rate (fps) - 0 = auto
   headers?: Record<string, string>; // Custom HTTP headers for media network requests — adaptive manifest + segments (HLS/DASH) and progressive downloads alike (e.g. auth tokens, signed cookies)
@@ -185,8 +216,45 @@ export interface PlayerConfig {
   drm?: boolean; // Enable DRM mode for HLS (native video element, no canvas)
   licenseUrl?: string; // Widevine/FairPlay license server URL
   licenseHeaders?: Record<string, string>; // Custom headers for license requests (e.g., auth tokens)
+  /** Preferred typed DRM configuration. Legacy fields remain supported. */
+  drmConfig?: {
+    licenseUrl: string;
+    licenseHeaders?: Record<string, string>;
+  };
   lcevc?: boolean; // Enable MPEG-5 Part 2 LCEVC decoding (needs the lcevc_dec.js library)
   lcevcUrl?: string; // Optional URL to lazy-load the lcevc_dec.js decoder library (else expect a global LCEVCdec)
+}
+
+export type PlayerSurface =
+  | {
+      kind: "canvas";
+      element: HTMLCanvasElement | OffscreenCanvas;
+      reason: "progressive" | "adaptive";
+    }
+  | {
+      kind: "video";
+      element: HTMLVideoElement;
+      reason: "adaptive" | "drm";
+    };
+
+export type RenderingBackend =
+  | "progressive-wasm"
+  | "shaka"
+  | "hls.js"
+  | "dash.js"
+  | "unknown";
+
+export interface RenderingDiagnostics {
+  backend: RenderingBackend;
+  container?: string;
+  decoder: "webcodecs" | "wasm" | "native" | "none" | "unknown";
+  renderer: "canvas" | "native-video" | "none" | "unknown";
+  sourceDynamicRange: "sdr" | "hdr10" | "hlg" | "dolby-vision" | "unknown";
+  outputDynamicRange: "sdr" | "hdr" | "unknown";
+  outputVerification: "confirmed" | "inferred" | "unknown";
+  requestedColorSpace?: string;
+  appliedColorSpace?: string;
+  toneMapping: "none" | "native" | "shader" | "unknown";
 }
 
 // ============================================================================
@@ -197,6 +265,14 @@ export interface Chapter {
   title: string;
   start: number; // seconds
   end: number;   // seconds
+  id?: string;
+  labels?: Array<{
+    text: string;
+    language?: string;
+    country?: string;
+  }>;
+  language?: string;
+  isHidden?: boolean;
 }
 
 export interface MediaInfo {
@@ -281,6 +357,8 @@ export interface Packet {
  * draw into.
  */
 export interface SubtitleRenderer {
+  /** Return false to leave an unsupported track on Movi's built-in renderer. */
+  supports?(track: SubtitleTrack): boolean;
   /** Called on track selection. `extradata` is the codec header (the ASS
    *  `[Script Info]`/`[V4+ Styles]` block for ass/ssa). `fonts` are embedded
    *  font attachments when available (may be undefined). */
@@ -365,6 +443,10 @@ export interface PlayerEventMap {
   durationChange: number;
   tracksChange: Track[];
   error: Error;
+  trackChange: TrackSelectionOutcome;
+  surfaceChange: PlayerSurface | null;
+  chaptersChange: Chapter[];
+  diagnosticsChange: RenderingDiagnostics;
   filerevoked: { offset: number; length: number; reason: string };
   loadStart: void;
   loadEnd: void;
