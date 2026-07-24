@@ -9,9 +9,10 @@ copyright and attribution. Changes are maintained in small commits so that
 generally useful pieces can be offered upstream without coupling upstream to
 KMediaPlayer.
 
-The `0.3.5-kmp.2` release is based on upstream's
-`feat/pluggable-subtitle-renderer` branch at commit
-`5a8e796e1c04b61b59412580b3a2bbb3ea6ba3ac`.
+The `0.3.5-kmp.3` release is based directly on upstream's `develop` branch at
+commit `dfa30c95f59a8aa118b507639cff6ddb049878b8`. That history includes the
+merged pluggable subtitle renderer from commit
+`9ae8e31d90f94861af3fb18a62484756b8e27a85`.
 
 ## Fork additions
 
