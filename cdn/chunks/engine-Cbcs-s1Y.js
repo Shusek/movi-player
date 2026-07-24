@@ -336,21 +336,21 @@ class HttpSource {
     let t2 = 0, s2 = false, n2 = 0, o2 = 0, h2 = e2, d2 = false;
     for (; this.atomicIsStreaming(); ) try {
       const c2 = this.getBuffer();
-      let l2;
-      if (l2 = s2 ? this.atomicGetBufferStart() + this.atomicGetWritePos() : e2, this.size > 0 && l2 >= this.size) {
+      let u2;
+      if (u2 = s2 ? this.atomicGetBufferStart() + this.atomicGetWritePos() : e2, this.size > 0 && u2 >= this.size) {
         i.debug(r, "Stream reached end of requested range (EOF)"), this.atomicSetStreaming(false);
         break;
       }
-      const u2 = this.size > 0 && this.bufferSize >= this.size ? this.size : Math.floor(Math.min(a, 0.9 * this.bufferSize)), f2 = this.size > 0 ? Math.min(l2 + u2 - 1, this.size - 1) : l2 + u2 - 1;
-      i.debug(r, `Fetching range: ${l2}-${f2} (max ${(u2 / 1024 / 1024).toFixed(1)}MB)`);
-      const m2 = await fetch(this.url, { headers: await this.buildRequestHeaders({ offset: l2, length: f2 - l2 + 1, openEnded: d2 }), cache: "no-store", signal: this.abortController.signal });
+      const l2 = this.size > 0 && this.bufferSize >= this.size ? this.size : Math.floor(Math.min(a, 0.9 * this.bufferSize)), f2 = this.size > 0 ? Math.min(u2 + l2 - 1, this.size - 1) : u2 + l2 - 1;
+      i.debug(r, `Fetching range: ${u2}-${f2} (max ${(l2 / 1024 / 1024).toFixed(1)}MB)`);
+      const m2 = await fetch(this.url, { headers: await this.buildRequestHeaders({ offset: u2, length: f2 - u2 + 1, openEnded: d2 }), cache: "no-store", signal: this.abortController.signal });
       if (403 === m2.status && !d2) {
         d2 = true;
         try {
           m2.body?.cancel();
         } catch {
         }
-        i.warn(r, `403 for bounded range ${l2}-${f2}; retrying open-ended (bytes=${l2}-)`);
+        i.warn(r, `403 for bounded range ${u2}-${f2}; retrying open-ended (bytes=${u2}-)`);
         continue;
       }
       if (200 === m2.status) {
@@ -428,8 +428,8 @@ class HttpSource {
               this.atomicSetWritePos(e6);
               const s4 = this.atomicGetBufferStart() + e6;
               s4 > this.maxBufferedEnd && (this.maxBufferedEnd = s4);
-              const o3 = this.size > 0 && this.bufferSize >= this.size, d3 = s4 - h2, l3 = Math.floor(Math.min(a, 0.9 * this.bufferSize)), u3 = !o3 && d3 >= l3, f3 = !o3 && e6 >= 0.9 * c2.length;
-              if (u3 || f3) {
+              const o3 = this.size > 0 && this.bufferSize >= this.size, d3 = s4 - h2, u3 = Math.floor(Math.min(a, 0.9 * this.bufferSize)), l3 = !o3 && d3 >= u3, f3 = !o3 && e6 >= 0.9 * c2.length;
+              if (l3 || f3) {
                 const t4 = this.atomicGetBufferStart(), a2 = this.position - t4;
                 if (a2 > 0.25 * this.bufferSize && this.size > 0 && s4 < this.size) {
                   const s5 = Math.floor(a2);
@@ -438,7 +438,7 @@ class HttpSource {
                     break;
                   }
                 }
-                this.unlock(), i.debug(r, `Downloaded ${(d3 / 1024 / 1024).toFixed(1)}MB (${u3 ? "limit reached" : "buffer full"}), stopping stream`), this.atomicSetStreaming(false);
+                this.unlock(), i.debug(r, `Downloaded ${(d3 / 1024 / 1024).toFixed(1)}MB (${l3 ? "limit reached" : "buffer full"}), stopping stream`), this.atomicSetStreaming(false);
                 break;
               }
               if (this.unlock(), this.size > 0 && s4 >= this.size) {
@@ -502,11 +502,11 @@ class HttpSource {
       await new Promise((e4) => {
         let s4 = false;
         const a3 = () => {
-          s4 || (s4 = true, clearTimeout(n4), "undefined" != typeof self && self.removeEventListener("online", h4), c2?.removeEventListener("abort", l2), e4());
+          s4 || (s4 = true, clearTimeout(n4), "undefined" != typeof self && self.removeEventListener("online", h4), c2?.removeEventListener("abort", u2), e4());
         }, n4 = setTimeout(a3, d3), h4 = () => {
           i.info(r, "Online event during backoff — retrying immediately"), t2 = 0, o2 = 0, a3();
-        }, l2 = () => a3();
-        "undefined" != typeof self && self.addEventListener && self.addEventListener("online", h4), c2?.addEventListener("abort", l2);
+        }, u2 = () => a3();
+        "undefined" != typeof self && self.addEventListener && self.addEventListener("online", h4), c2?.addEventListener("abort", u2);
       });
     }
     if (this.reader) {
@@ -617,20 +617,20 @@ class HttpSource {
       if (this.streamError) throw this.streamError;
       const t3 = Date.now();
       this.bufferEnd > d2 && (d2 = this.bufferEnd, c2 = t3, t3 - a2 > 0.8 * s2 && (n2 = t3 + 15e3));
-      const l3 = t3 - c2;
-      if (l3 > 15e3) return i.error(r, `Stream stalled: no progress for ${(l3 / 1e3).toFixed(1)}s at ${e2}, needed ${o2}, currently ${this.bufferEnd}`), false;
+      const u3 = t3 - c2;
+      if (u3 > 15e3) return i.error(r, `Stream stalled: no progress for ${(u3 / 1e3).toFixed(1)}s at ${e2}, needed ${o2}, currently ${this.bufferEnd}`), false;
       if (t3 > n2) return i.error(r, `Timeout waiting for data at ${e2}, needed ${o2}, currently ${this.bufferEnd}`), false;
       if (this.useSharedBuffer && this.headerView && Atomics.load(this.headerView, 5) !== h2) return i.warn(r, `Stream superseded while waiting for ${e2}`), false;
       this.useSharedBuffer && this.headerView ? await new Promise((e3) => setTimeout(e3, 2)) : await this.waitForBufferAdvance(o2, 250);
     }
-    const l2 = this.bufferEnd >= o2;
+    const u2 = this.bufferEnd >= o2;
     if (this.streamError) throw this.streamError;
-    if (!l2 && !this.atomicIsStreaming()) {
+    if (!u2 && !this.atomicIsStreaming()) {
       if (this.size > 0 && this.bufferEnd >= this.size) return true;
       if (this.bufferEnd >= o2) return true;
       i.warn(r, `Stream ended before reaching needed offset ${o2} (current end: ${this.bufferEnd})`);
     }
-    return l2;
+    return u2;
   }
   async read(e2, t2) {
     const s2 = this.peekMetadata(e2, t2);
@@ -880,8 +880,8 @@ class FileSource {
     try {
       const e2 = this.preloadOffset > 0 ? this.preloadOffset : 0, t2 = this.duration > 0 && this.currentTime > 0 ? ` (time: ${this.currentTime.toFixed(2)}s / ${this.duration.toFixed(2)}s)` : "";
       i.debug(h, `Starting preload for file: ${this.file.name} around offset ${e2}${t2} (${this.size} bytes)`);
-      const r2 = Math.ceil(this.size / d), s2 = this.cache.getMaxSize(), a2 = this.fullFilePreload && s2 > 0 && this.size < 0.8 * s2, n2 = a2 ? r2 : 20, o2 = a2 ? 0 : 5, c2 = Math.floor(e2 / d), l2 = a2 ? 0 : c2, u2 = Math.min((a2 ? 0 : c2) + n2, r2), f2 = Math.max(0, c2 - o2), m2 = c2;
-      for (let e3 = l2; e3 < u2 && !this.preloadAbort && !await this.shouldStopPreload(); e3++) {
+      const r2 = Math.ceil(this.size / d), s2 = this.cache.getMaxSize(), a2 = this.fullFilePreload && s2 > 0 && this.size < 0.8 * s2, n2 = a2 ? r2 : 20, o2 = a2 ? 0 : 5, c2 = Math.floor(e2 / d), u2 = a2 ? 0 : c2, l2 = Math.min((a2 ? 0 : c2) + n2, r2), f2 = Math.max(0, c2 - o2), m2 = c2;
+      for (let e3 = u2; e3 < l2 && !this.preloadAbort && !await this.shouldStopPreload(); e3++) {
         const t3 = e3 * d, i2 = Math.min(d, this.size - t3);
         if (i2 <= 0) break;
         if (this.cache.get(this.sourceKey, t3, i2)) continue;
@@ -1044,8 +1044,8 @@ class ThumbnailHttpSource {
         }
         const h2 = await s4.arrayBuffer();
         this.buffer = new Uint8Array(h2), this.bufferStart = r2, this.bufferEnd = r2 + h2.byteLength, i.debug(c, `Buffered: ${this.bufferStart}-${this.bufferEnd} (${(h2.byteLength / 1024).toFixed(1)} KB)`);
-        const d2 = Math.min(t2, h2.byteLength), l2 = new Uint8Array(d2);
-        return l2.set(this.buffer.subarray(0, d2)), this.position = e2 + d2, l2.buffer;
+        const d2 = Math.min(t2, h2.byteLength), u2 = new Uint8Array(d2);
+        return u2.set(this.buffer.subarray(0, d2)), this.position = e2 + d2, u2.buffer;
       } catch (t3) {
         if (clearTimeout(o2), "AbortError" === t3.name) return i.debug(c, `Read aborted at offset ${e2}`), new ArrayBuffer(0);
         const r3 = t3.message || "";
@@ -1084,8 +1084,8 @@ class ThumbnailHttpSource {
     return this.bufferStart;
   }
 }
-const l = "EncryptedSource";
-function u(e2) {
+const u = "EncryptedSource";
+function l(e2) {
   const t2 = atob(e2), i2 = new ArrayBuffer(t2.length), r2 = new Uint8Array(i2);
   for (let e3 = 0; e3 < t2.length; e3++) r2[e3] = t2.charCodeAt(e3);
   return r2;
@@ -1124,7 +1124,7 @@ class EncryptedHttpSource extends HttpSource {
   _blockInflight = /* @__PURE__ */ new Map();
   _activeStreams = /* @__PURE__ */ new Set();
   constructor(e2) {
-    super(e2.videoUrl, e2.headers ?? {}), this._encConfig = e2, this._cryptoReady = this.initCrypto(), i.info(l, "Created (ECDH protected)");
+    super(e2.videoUrl, e2.headers ?? {}), this._encConfig = e2, this._cryptoReady = this.initCrypto(), i.info(u, "Created (ECDH protected)");
   }
   async initCrypto() {
     const e2 = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]), t2 = new Uint8Array(await crypto.subtle.exportKey("raw", e2.publicKey));
@@ -1155,18 +1155,18 @@ class EncryptedHttpSource extends HttpSource {
     globalThis.__movilog?.log(`[EncSrc] read offset=${i2} len=${r2} blocks=[${a2}..${n2}] hits=${h2.length} misses=${d2.length}${d2.length ? ` missBlocks=${d2.join(",")}` : ""}`);
     const c2 = [];
     for (let e3 = a2; e3 <= n2; e3++) c2.push(await this.fetchBlock(e3));
-    const l2 = performance.now() - o2;
-    l2 > 100 && globalThis.__movilog?.log(`[EncSrc] read DONE offset=${i2} blocks=[${a2}..${n2}] took ${l2.toFixed(0)}ms`);
-    const u2 = new Uint8Array(r2);
+    const u2 = performance.now() - o2;
+    u2 > 100 && globalThis.__movilog?.log(`[EncSrc] read DONE offset=${i2} blocks=[${a2}..${n2}] took ${u2.toFixed(0)}ms`);
+    const l2 = new Uint8Array(r2);
     let f2 = 0;
     for (let e3 = a2; e3 <= n2; e3++) {
       const t3 = c2[e3 - a2], n3 = e3 * s2, o3 = Math.max(0, i2 - n3), h3 = Math.min(t3.length, i2 + r2 - n3);
       if (h3 <= o3) continue;
       const d3 = t3.subarray(o3, h3);
-      u2.set(d3, f2), f2 += d3.length;
+      l2.set(d3, f2), f2 += d3.length;
     }
     const m2 = i2 + f2;
-    return this.maybePrefetch(m2), f2 === r2 ? u2.buffer : u2.slice(0, f2).buffer;
+    return this.maybePrefetch(m2), f2 === r2 ? l2.buffer : l2.slice(0, f2).buffer;
   }
   maybePrefetch(e2) {
     if (this._authFailed) return;
@@ -1260,12 +1260,12 @@ class EncryptedHttpSource extends HttpSource {
     n2.signal.aborted ? a2.abort() : n2.signal.addEventListener("abort", o2);
     const h2 = { firstBlock: e2, lastBlock: t2, abortCtrl: a2, resolvers: i2 };
     if (this._activeStreams.add(h2), await this.ensureValidToken(), !this._masterKey || !this._hmacKey) throw this._activeStreams.delete(h2), n2.signal.removeEventListener("abort", o2), new Error("Session keys unavailable");
-    const d2 = this._masterKey, c2 = this._token, l2 = this._hmacKey, u2 = EncryptedHttpSource.BLOCK_SIZE, m2 = e2 * u2;
-    let g2 = (t2 + 1) * u2 - 1;
+    const d2 = this._masterKey, c2 = this._token, u2 = this._hmacKey, l2 = EncryptedHttpSource.BLOCK_SIZE, m2 = e2 * l2;
+    let g2 = (t2 + 1) * l2 - 1;
     this._knownFileSize > 0 && (g2 = Math.min(g2, this._knownFileSize - 1));
     const p2 = g2 - m2 + 1;
     globalThis.__movilog?.log(`[EncSrc] stream#${r2} token ready (${(performance.now() - s2).toFixed(0)}ms), range=${m2}-${g2} (${(p2 / 1024 / 1024).toFixed(1)} MB)`);
-    const b2 = this.generateNonce(), v2 = Date.now(), S2 = `GET:${c2}:${b2}:${v2}:${m2}:${p2}`, y2 = new Uint8Array(await crypto.subtle.sign("HMAC", l2, new TextEncoder().encode(S2))), w2 = performance.now(), k2 = await fetch(this._encConfig.videoUrl, { method: "GET", headers: { Range: `bytes=${m2}-${g2}`, "X-Token": c2, "X-Fingerprint": this._encConfig.fingerprint, "X-Nonce": b2, "X-Timestamp": String(v2), "X-Signature": f(y2), ...this._encConfig.headers }, credentials: "include", signal: a2.signal });
+    const b2 = this.generateNonce(), v2 = Date.now(), S2 = `GET:${c2}:${b2}:${v2}:${m2}:${p2}`, y2 = new Uint8Array(await crypto.subtle.sign("HMAC", u2, new TextEncoder().encode(S2))), w2 = performance.now(), k2 = await fetch(this._encConfig.videoUrl, { method: "GET", headers: { Range: `bytes=${m2}-${g2}`, "X-Token": c2, "X-Fingerprint": this._encConfig.fingerprint, "X-Nonce": b2, "X-Timestamp": String(v2), "X-Signature": f(y2), ...this._encConfig.headers }, credentials: "include", signal: a2.signal });
     if (globalThis.__movilog?.log(`[EncSrc] stream#${r2} fetch() returned ${k2.status} in ${(performance.now() - w2).toFixed(0)}ms`), 401 === k2.status || 403 === k2.status) throw this._token = "", this._expiresAt = 0, this._authFailed = true, this._encConfig.onAuthFailed?.(`Auth failed: ${k2.status}`), new Error(`Auth failed: ${k2.status}`);
     if (!k2.ok && 206 !== k2.status || !k2.body) throw new Error(`HTTP ${k2.status}: ${k2.statusText}`);
     const _2 = k2.body.getReader();
@@ -1328,7 +1328,7 @@ class EncryptedHttpSource extends HttpSource {
       this._abortCtrl.abort();
     } catch {
     }
-    this._token = "", this._expiresAt = 0, this._masterKey = null, this._hmacKey = null, this._clientPrivKey = null, this._usedNonces.clear(), this._blockCache.clear(), this._blockInflight.clear(), super.close(), i.info(l, "Closed");
+    this._token = "", this._expiresAt = 0, this._masterKey = null, this._hmacKey = null, this._clientPrivKey = null, this._usedNonces.clear(), this._blockCache.clear(), this._blockInflight.clear(), super.close(), i.info(u, "Closed");
   }
   async ensureValidToken() {
     this._token && Date.now() + 500 < this._expiresAt || (this._tokenRefresh || (this._tokenRefresh = this.refreshToken().finally(() => {
@@ -1340,14 +1340,14 @@ class EncryptedHttpSource extends HttpSource {
     const e2 = await fetch(this._encConfig.tokenUrl, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${this._encConfig.sessionToken}`, ...this._encConfig.headers }, body: JSON.stringify({ url: this._encConfig.videoId, videoId: this._encConfig.videoId, fingerprint: this._encConfig.fingerprint, clientPubKey: this._clientPubB64 }), credentials: "include", signal: this._abortCtrl.signal });
     if (!e2.ok) {
       const t3 = `Token request failed: ${e2.status}`;
-      throw i.error(l, t3), this._encConfig.onAuthFailed?.(t3), new Error(t3);
+      throw i.error(u, t3), this._encConfig.onAuthFailed?.(t3), new Error(t3);
     }
     const t2 = await e2.json();
     this._token = t2.token, this._expiresAt = t2.expiresAt, this._knownFileSize < 0 && "number" == typeof t2.fileSize && (this._knownFileSize = t2.fileSize), !this._encContentDispositionFilename && "string" == typeof t2.contentDispositionFilename && t2.contentDispositionFilename && (this._encContentDispositionFilename = t2.contentDispositionFilename);
-    const r2 = await crypto.subtle.importKey("raw", u(t2.serverPubKey), { name: "ECDH", namedCurve: "P-256" }, false, []), s2 = await crypto.subtle.deriveBits({ name: "ECDH", public: r2 }, this._clientPrivKey, 256), a2 = await crypto.subtle.importKey("raw", s2, { name: "HKDF" }, false, ["deriveBits"]), n2 = t2.hkdfSalt ? u(t2.hkdfSalt) : new Uint8Array(32), o2 = await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt: n2, info: new TextEncoder().encode("enc:master-aes") }, a2, 256);
+    const r2 = await crypto.subtle.importKey("raw", l(t2.serverPubKey), { name: "ECDH", namedCurve: "P-256" }, false, []), s2 = await crypto.subtle.deriveBits({ name: "ECDH", public: r2 }, this._clientPrivKey, 256), a2 = await crypto.subtle.importKey("raw", s2, { name: "HKDF" }, false, ["deriveBits"]), n2 = t2.hkdfSalt ? l(t2.hkdfSalt) : new Uint8Array(32), o2 = await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt: n2, info: new TextEncoder().encode("enc:master-aes") }, a2, 256);
     this._masterKey = await crypto.subtle.importKey("raw", o2, { name: "AES-GCM" }, false, ["decrypt"]);
     const h2 = await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt: n2, info: new TextEncoder().encode("enc:req-hmac") }, a2, 256);
-    this._hmacKey = await crypto.subtle.importKey("raw", h2, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]), this._usedNonces.clear(), i.debug(l, `Token refreshed, expires in ${t2.expiresAt - Date.now()}ms`);
+    this._hmacKey = await crypto.subtle.importKey("raw", h2, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]), this._usedNonces.clear(), i.debug(u, `Token refreshed, expires in ${t2.expiresAt - Date.now()}ms`);
   }
   generateNonce() {
     const e2 = new Uint8Array(16);
@@ -1418,18 +1418,18 @@ async function k(e2, t2) {
   if (!a2) return null;
   const n2 = v(e2, S(a2));
   let o2 = null, h2 = null;
-  const d2 = [], c2 = [], l2 = [], u2 = a2.getElementsByTagName("Period")[0];
-  if (!u2) return null;
-  const f2 = v(n2, S(u2));
-  for (const e3 of Array.from(u2.getElementsByTagName("AdaptationSet"))) {
+  const d2 = [], c2 = [], u2 = [], l2 = a2.getElementsByTagName("Period")[0];
+  if (!l2) return null;
+  const f2 = v(n2, S(l2));
+  for (const e3 of Array.from(l2.getElementsByTagName("AdaptationSet"))) {
     const t3 = v(f2, S(e3));
     for (const i2 of Array.from(e3.getElementsByTagName("Representation"))) {
       if (!y(i2, e3)) continue;
-      const r3 = v(t3, S(i2)), s3 = parseInt(i2.getAttribute("bandwidth") || "0", 10), a3 = w(i2, e3), n3 = i2.getAttribute("codecs") || e3.getAttribute("codecs") || "", u3 = g.test(n3) && p.test(n3);
+      const r3 = v(t3, S(i2)), s3 = parseInt(i2.getAttribute("bandwidth") || "0", 10), a3 = w(i2, e3), n3 = i2.getAttribute("codecs") || e3.getAttribute("codecs") || "", l3 = g.test(n3) && p.test(n3);
       if ("video" === a3) {
-        (!o2 || s3 > o2.bw) && (o2 = { url: r3, bw: s3, muxed: u3 });
+        (!o2 || s3 > o2.bw) && (o2 = { url: r3, bw: s3, muxed: l3 });
         const t4 = parseInt(i2.getAttribute("height") || e3.getAttribute("height") || "0", 10), a4 = i2.getAttribute("id") || String(s3);
-        l2.some((e4) => e4.url === r3) || l2.push({ url: r3, bw: s3, height: t4, id: a4, muxed: u3 });
+        u2.some((e4) => e4.url === r3) || u2.push({ url: r3, bw: s3, height: t4, id: a4, muxed: l3 });
       } else if ("audio" === a3) {
         (!h2 || s3 > h2.bw) && (h2 = { url: r3, bw: s3 });
         const t4 = e3.getAttribute("lang") || i2.getAttribute("lang") || "und", a4 = i2.getAttribute("id") || String(s3);
@@ -1455,10 +1455,10 @@ async function k(e2, t2) {
     }
     e3.size > 1 && (k2.audioTracks = Array.from(e3.values()).sort((e4, t3) => t3.bw - e4.bw).map((e4) => ({ url: e4.url, lang: e4.lang, label: b(e4.lang) })));
   }
-  if (l2.length > 1) {
+  if (u2.length > 1) {
     const e3 = {};
-    for (const t3 of l2) e3[t3.height] = (e3[t3.height] || 0) + 1;
-    k2.videoTracks = l2.slice().sort((e4, t3) => t3.bw - e4.bw).map((t3) => ({ url: t3.url, id: t3.id, bandwidth: t3.bw, label: t3.height > 0 ? e3[t3.height] > 1 ? `${t3.height}p · ${Math.round(t3.bw / 1e3)} kbps` : `${t3.height}p` : `${Math.round(t3.bw / 1e3)} kbps` }));
+    for (const t3 of u2) e3[t3.height] = (e3[t3.height] || 0) + 1;
+    k2.videoTracks = u2.slice().sort((e4, t3) => t3.bw - e4.bw).map((t3) => ({ url: t3.url, id: t3.id, bandwidth: t3.bw, label: t3.height > 0 ? e3[t3.height] > 1 ? `${t3.height}p · ${Math.round(t3.bw / 1e3)} kbps` : `${t3.height}p` : `${Math.round(t3.bw / 1e3)} kbps` }));
   }
   return i.info(m, `DASH fallback → video=${k2.videoUrl}${k2.videoTracks ? ` (${k2.videoTracks.length} qualities)` : ""}${k2.audioUrl ? `, audio=${k2.audioUrl}` : " (muxed)"}${k2.audioTracks ? `, audioTracks=${k2.audioTracks.length}` : ""}${k2.subtitles ? `, subs=${k2.subtitles.length}` : ""}`), k2;
 }
@@ -1700,18 +1700,18 @@ function I(e2, t2) {
 }
 const L = "FFmpegLoader";
 let O = null, U = null, V = null;
-const z = /* @__PURE__ */ new Map();
-function N(e2) {
+const N = /* @__PURE__ */ new Map();
+function z(e2) {
   const t2 = "undefined" != typeof document ? document.baseURI : "undefined" != typeof location ? location.href : import.meta.url, i2 = new URL(e2, t2);
   return i2.pathname.endsWith("/") || (i2.pathname = `${i2.pathname}/`), i2.href;
 }
-async function H(e2) {
+async function W(e2) {
   if (e2) {
-    const t2 = N(e2);
-    let i2 = z.get(t2);
+    const t2 = z(e2);
+    let i2 = N.get(t2);
     if (!i2) {
       const e3 = new URL("wasm/movi.js", t2).href;
-      i2 = import(e3).then((e4) => e4.default), z.set(t2, i2);
+      i2 = import(e3).then((e4) => e4.default), N.set(t2, i2);
     }
     return i2;
   }
@@ -1721,28 +1721,28 @@ async function H(e2) {
   }
   return V;
 }
-function W(e2, wasmBinary, t2) {
+function H(e2, wasmBinary, t2) {
   const r2 = { print: (e3) => {
     e3 && e3.trim() && i.debug("WASM", e3);
   }, printErr: (e3) => {
     e3 && e3.trim() && i.debug("WASM", e3);
   } };
   if (wasmBinary && (r2.wasmBinary = wasmBinary), t2 && (r2.onAbort = t2), e2.assetBaseUrl) {
-    const t3 = new URL("wasm/", N(e2.assetBaseUrl));
+    const t3 = new URL("wasm/", z(e2.assetBaseUrl));
     r2.locateFile = (i2) => e2.workerPath && i2.endsWith(".worker.js") ? e2.workerPath : new URL(i2.split("/").pop() || i2, t3).href;
   } else e2.workerPath && (r2.locateFile = (t3) => t3.endsWith(".worker.js") ? e2.workerPath : t3);
   return r2;
 }
-function G() {
+function K() {
   U = null, O = null;
 }
-async function K(e2 = {}) {
+async function G(e2 = {}) {
   return U || O || (O = (async () => {
     i.info(L, "Loading WASM module...");
     const wasmBinary = e2.wasmBinary || null;
     try {
-      const t2 = await H(e2.assetBaseUrl), r2 = await t2(W(e2, wasmBinary, (e3) => {
-        i.error(L, `WASM aborted — discarding dead cached module: ${e3}`), G();
+      const t2 = await W(e2.assetBaseUrl), r2 = await t2(H(e2, wasmBinary, (e3) => {
+        i.error(L, `WASM aborted — discarding dead cached module: ${e3}`), K();
       }));
       return i.info(L, "WASM module loaded successfully"), r2.FS ? i.debug(L, "FS is present on module") : i.error(L, "FS is MISSING from module!"), U = r2, r2;
     } catch (e3) {
@@ -1754,7 +1754,7 @@ async function X(e2 = {}) {
   i.info(L, "Loading NEW WASM module instance (isolated)...");
   const wasmBinary = e2.wasmBinary || null;
   try {
-    const t2 = await H(e2.assetBaseUrl), r2 = await t2(W(e2, wasmBinary));
+    const t2 = await W(e2.assetBaseUrl), r2 = await t2(H(e2, wasmBinary));
     return i.info(L, "NEW WASM module instance loaded"), r2;
   } catch (e3) {
     throw i.error(L, "Failed to load new WASM module", e3), e3;
@@ -1952,7 +1952,7 @@ class WasmBindings {
     if (!this.contextPtr) return [];
     const r2 = this.module._movi_get_attachment_count, s2 = this.module._movi_get_attachment_stream_index, a2 = this.module._movi_get_attachment_size, n2 = this.module._movi_get_attachment_name, o2 = this.module._movi_get_attachment_mime_type, h2 = this.module._movi_get_attachment_data;
     if (!(r2 && s2 && a2 && n2 && o2 && h2)) return [];
-    const d2 = Math.min(Math.max(0, r2(this.contextPtr)), t2), c2 = [], l2 = this.module._malloc(512), u2 = this.module._malloc(128);
+    const d2 = Math.min(Math.max(0, r2(this.contextPtr)), t2), c2 = [], u2 = this.module._malloc(512), l2 = this.module._malloc(128);
     let f2 = 0;
     try {
       for (let t3 = 0; t3 < d2; t3++) {
@@ -1960,17 +1960,17 @@ class WasmBindings {
         if (r3 <= 0 || r3 > i2 || f2 + r3 > e2) continue;
         const d3 = this.module._malloc(r3);
         if (d3) try {
-          this.module.HEAPU8.fill(0, l2, l2 + 512), this.module.HEAPU8.fill(0, u2, u2 + 128), n2(this.contextPtr, t3, l2, 512), o2(this.contextPtr, t3, u2, 128);
+          this.module.HEAPU8.fill(0, u2, u2 + 512), this.module.HEAPU8.fill(0, l2, l2 + 128), n2(this.contextPtr, t3, u2, 512), o2(this.contextPtr, t3, l2, 128);
           const i3 = h2(this.contextPtr, t3, d3, r3);
           if (i3 <= 0 || f2 + i3 > e2) continue;
           const a3 = new Uint8Array(i3);
-          a3.set(this.module.HEAPU8.subarray(d3, d3 + i3)), c2.push({ streamIndex: s2(this.contextPtr, t3), name: J(this.module, l2, 512), mimeType: J(this.module, u2, 128), data: a3 }), f2 += i3;
+          a3.set(this.module.HEAPU8.subarray(d3, d3 + i3)), c2.push({ streamIndex: s2(this.contextPtr, t3), name: J(this.module, u2, 512), mimeType: J(this.module, l2, 128), data: a3 }), f2 += i3;
         } finally {
           this.module._free(d3);
         }
       }
     } finally {
-      this.module._free(l2), this.module._free(u2);
+      this.module._free(u2), this.module._free(l2);
     }
     return c2;
   }
@@ -2340,8 +2340,8 @@ class ThumbnailBindings {
     if (this.module._movi_thumbnail_decode_frame_yuv(this.contextPtr) < 0) return null;
     const e2 = this.module._movi_thumbnail_get_frame_width(this.contextPtr), t2 = this.module._movi_thumbnail_get_frame_height(this.contextPtr), i2 = this.module._movi_thumbnail_get_plane_data(this.contextPtr, 0), r2 = this.module._movi_thumbnail_get_plane_data(this.contextPtr, 1), s2 = this.module._movi_thumbnail_get_plane_data(this.contextPtr, 2), a2 = this.module._movi_thumbnail_get_plane_linesize(this.contextPtr, 0), n2 = this.module._movi_thumbnail_get_plane_linesize(this.contextPtr, 1), o2 = this.module._movi_thumbnail_get_plane_linesize(this.contextPtr, 2);
     if (!i2 || !r2 || !s2) return null;
-    const h2 = a2 * t2, d2 = Math.ceil(t2 / 2), c2 = n2 * d2, l2 = o2 * d2;
-    return { width: e2, height: t2, yPlane: new Uint8Array(this.module.HEAPU8.subarray(i2, i2 + h2).slice()), uPlane: new Uint8Array(this.module.HEAPU8.subarray(r2, r2 + c2).slice()), vPlane: new Uint8Array(this.module.HEAPU8.subarray(s2, s2 + l2).slice()), yStride: a2, uStride: n2, vStride: o2 };
+    const h2 = a2 * t2, d2 = Math.ceil(t2 / 2), c2 = n2 * d2, u2 = o2 * d2;
+    return { width: e2, height: t2, yPlane: new Uint8Array(this.module.HEAPU8.subarray(i2, i2 + h2).slice()), uPlane: new Uint8Array(this.module.HEAPU8.subarray(r2, r2 + c2).slice()), vPlane: new Uint8Array(this.module.HEAPU8.subarray(s2, s2 + u2).slice()), yStride: a2, uStride: n2, vStride: o2 };
   }
   decodeCurrentPacket(e2, t2) {
     if (!this.contextPtr) return null;
@@ -2399,20 +2399,20 @@ class CodecParser {
     const a2 = s2.readBits(2), n2 = s2.readBits(1), o2 = s2.readBits(5), h2 = s2.readBits(32), d2 = [];
     for (let e3 = 0; e3 < 6; e3++) d2.push(s2.readBits(8));
     const c2 = s2.readBits(8);
-    let l2 = "";
+    let u2 = "";
     switch (a2) {
       case 1:
-        l2 = "A";
+        u2 = "A";
         break;
       case 2:
-        l2 = "B";
+        u2 = "B";
         break;
       case 3:
-        l2 = "C";
+        u2 = "C";
     }
-    let u2 = 0, f2 = h2;
-    for (let e3 = 0; e3 < 32; e3++) u2 = 2 * u2 + (1 & f2), f2 = Math.floor(f2 / 2);
-    let m2 = `hvc1.${l2}${o2}.${(u2 >>> 0).toString(16)}.${0 === n2 ? "L" : "H"}${c2}`, g2 = false;
+    let l2 = 0, f2 = h2;
+    for (let e3 = 0; e3 < 32; e3++) l2 = 2 * l2 + (1 & f2), f2 = Math.floor(f2 / 2);
+    let m2 = `hvc1.${u2}${o2}.${(l2 >>> 0).toString(16)}.${0 === n2 ? "L" : "H"}${c2}`, g2 = false;
     for (let e3 = 5; e3 >= 0; e3--) {
       const t3 = d2[e3];
       (0 !== t3 || g2) && (m2 += "." + t3.toString(16), g2 = true);
@@ -2438,8 +2438,8 @@ class CodecParser {
     if (e2.length < 12) return i.warn(ie, "VP9 extradata too small"), null;
     const t2 = new BitReader(e2);
     t2.skipBits(8), t2.skipBits(24);
-    const r2 = t2.readBits(8), s2 = t2.readBits(8), a2 = t2.readBits(4), n2 = t2.readBits(3), o2 = t2.readBits(1), h2 = t2.readBits(8), d2 = t2.readBits(8), c2 = t2.readBits(8), l2 = (e3) => e3.toString().padStart(2, "0");
-    return `vp09.${l2(r2)}.${l2(s2)}.${l2(a2)}.${l2(n2)}.${l2(h2)}.${l2(d2)}.${l2(c2)}.${l2(o2)}`;
+    const r2 = t2.readBits(8), s2 = t2.readBits(8), a2 = t2.readBits(4), n2 = t2.readBits(3), o2 = t2.readBits(1), h2 = t2.readBits(8), d2 = t2.readBits(8), c2 = t2.readBits(8), u2 = (e3) => e3.toString().padStart(2, "0");
+    return `vp09.${u2(r2)}.${u2(s2)}.${u2(a2)}.${u2(n2)}.${u2(h2)}.${u2(d2)}.${u2(c2)}.${u2(o2)}`;
   }
   static getVvcCodecString(e2) {
     if (e2.length < 10) return i.warn(ie, `VVC extradata too small: ${e2.length}`), null;
@@ -2503,7 +2503,7 @@ class Demuxer {
     this.source = e2, this.wasmBinary = wasmBinary, this.useNewWasmInstance = t2, this.assetBaseUrl = i2;
   }
   async open() {
-    if (i.info(re, "Opening media..."), this.useNewWasmInstance ? (i.debug(re, "Using isolated WASM instance"), this.module = await X({ wasmBinary: this.wasmBinary, assetBaseUrl: this.assetBaseUrl })) : this.module = await K({ wasmBinary: this.wasmBinary, assetBaseUrl: this.assetBaseUrl }), this.bindings = new WasmBindings(this.module), !this.bindings.create()) throw new Error("Failed to create demuxer context");
+    if (i.info(re, "Opening media..."), this.useNewWasmInstance ? (i.debug(re, "Using isolated WASM instance"), this.module = await X({ wasmBinary: this.wasmBinary, assetBaseUrl: this.assetBaseUrl })) : this.module = await G({ wasmBinary: this.wasmBinary, assetBaseUrl: this.assetBaseUrl }), this.bindings = new WasmBindings(this.module), !this.bindings.create()) throw new Error("Failed to create demuxer context");
     const e2 = new SourceDataAdapter(this.source);
     this.bindings.setDataSource(e2);
     const t2 = await this.bindings.open();
@@ -2535,8 +2535,8 @@ class Demuxer {
         e2.colorPrimaries && "unknown" !== e2.colorPrimaries && "reserved" !== e2.colorPrimaries && (s2.colorPrimaries = this.normalizeColorPrimaries(e2.colorPrimaries)), e2.colorTransfer && "unknown" !== e2.colorTransfer && "reserved" !== e2.colorTransfer && (s2.colorTransfer = this.normalizeColorTransfer(e2.colorTransfer)), e2.colorMatrix && "unknown" !== e2.colorMatrix && "reserved" !== e2.colorMatrix && (s2.colorSpace = this.normalizeColorMatrix(e2.colorMatrix));
         const a2 = (s2.colorPrimaries || "").toLowerCase(), n2 = (s2.colorTransfer || "").toLowerCase(), o2 = n2.includes("pq") || n2.includes("hlg") || n2.includes("smpte2084") || n2.includes("arib-std-b67"), h2 = a2.includes("bt2020") || a2.includes("rec2020");
         s2.isHDR = o2 || h2;
-        const d2 = s2.width >= 3840 && s2.height >= 2160, c2 = s2.colorPrimaries || "", l2 = s2.colorTransfer || "";
-        if (!s2.colorPrimaries || !s2.colorTransfer || d2 && ("bt709" === c2 || "bt709" === l2)) {
+        const d2 = s2.width >= 3840 && s2.height >= 2160, c2 = s2.colorPrimaries || "", u2 = s2.colorTransfer || "";
+        if (!s2.colorPrimaries || !s2.colorTransfer || d2 && ("bt709" === c2 || "bt709" === u2)) {
           const t3 = CodecParser.getColorSpaceInfo(e2.codecName, r2 ?? void 0, e2.width, e2.height);
           t3 && (t3.colorPrimaries && (s2.colorPrimaries = t3.colorPrimaries), t3.colorTransfer && (s2.colorTransfer = t3.colorTransfer), t3.colorSpace && (s2.colorSpace = t3.colorSpace), i.info(re, `Overriding/Filling Color Metadata via Heuristic: ${s2.colorPrimaries}/${s2.colorTransfer}`));
         }
@@ -2925,7 +2925,7 @@ class SoftwareVideoDecoder {
     return this.packetQueue.length;
   }
 }
-const le = "VideoDecoder";
+const ue = "VideoDecoder";
 class MoviVideoDecoder {
   decoder = null;
   swDecoder = null;
@@ -2964,7 +2964,7 @@ class MoviVideoDecoder {
   static MID_STREAM_OPENGOP_REJECT_LIMIT = 3;
   static DISABLE_OPENGOP_SW_FALLBACK = true;
   constructor(e2 = false) {
-    this.forceSoftware = e2, i.debug(le, `Created (forceSoftware: ${e2})`);
+    this.forceSoftware = e2, i.debug(ue, `Created (forceSoftware: ${e2})`);
   }
   setBindings(e2) {
     this.bindings = e2;
@@ -2976,14 +2976,14 @@ class MoviVideoDecoder {
     }
   }
   async configure(e2, t2, r2 = 0) {
-    if (this.currentTrack = e2, this.targetFps = r2, this.currentProfile = e2.profile, this.useSoftware = false, this.requiresSoftware = false, this.isAnnexBSource = false, this.openGopErrorCount = 0, this.hardwareRetryCount = 0, this.lastHardwareRetryTime = 0, this.swDecoder && (this.swDecoder.close(), this.swDecoder = null), this.forceSoftware) return i.info(le, "Force software decoding enabled, using WASM decoder"), this.useSoftware = true, this.initSoftwareDecoder();
-    if (!("VideoDecoder" in window)) return i.warn(le, "WebCodecs VideoDecoder not supported — falling back to software decoder"), this.useSoftware = true, this.initSoftwareDecoder();
+    if (this.currentTrack = e2, this.targetFps = r2, this.currentProfile = e2.profile, this.useSoftware = false, this.requiresSoftware = false, this.isAnnexBSource = false, this.openGopErrorCount = 0, this.hardwareRetryCount = 0, this.lastHardwareRetryTime = 0, this.swDecoder && (this.swDecoder.close(), this.swDecoder = null), this.forceSoftware) return i.info(ue, "Force software decoding enabled, using WASM decoder"), this.useSoftware = true, this.initSoftwareDecoder();
+    if (!("VideoDecoder" in window)) return i.warn(ue, "WebCodecs VideoDecoder not supported — falling back to software decoder"), this.useSoftware = true, this.initSoftwareDecoder();
     let s2 = CodecParser.getCodecString(e2.codec, e2.extradata);
-    if (s2 || (i.debug(le, "CodecParser returned null, falling back to manual mapping"), s2 = this.mapCodecToWebCodecs(e2.codec, e2.width, e2.height, e2.profile, e2.level)), !s2) return i.error(le, `Unsupported codec: ${e2.codec}`), false;
+    if (s2 || (i.debug(ue, "CodecParser returned null, falling back to manual mapping"), s2 = this.mapCodecToWebCodecs(e2.codec, e2.width, e2.height, e2.profile, e2.level)), !s2) return i.error(ue, `Unsupported codec: ${e2.codec}`), false;
     const a2 = { codec: s2, codedWidth: e2.width, codedHeight: e2.height, hardwareAcceleration: "prefer-hardware" };
-    (e2.colorPrimaries || e2.colorTransfer || e2.colorSpace) && (a2.colorSpace = { primaries: e2.colorPrimaries, transfer: e2.colorTransfer, matrix: e2.colorSpace }, i.info(le, `Decoder color space: primaries=${e2.colorPrimaries}, transfer=${e2.colorTransfer}, matrix=${e2.colorSpace}`));
+    (e2.colorPrimaries || e2.colorTransfer || e2.colorSpace) && (a2.colorSpace = { primaries: e2.colorPrimaries, transfer: e2.colorTransfer, matrix: e2.colorSpace }, i.info(ue, `Decoder color space: primaries=${e2.colorPrimaries}, transfer=${e2.colorTransfer}, matrix=${e2.colorSpace}`));
     let n2 = t2 || e2.extradata;
-    n2 && n2.length > 4 && (0 === n2[0] && 0 === n2[1] && 1 === n2[2] || 0 === n2[0] && 0 === n2[1] && 0 === n2[2] && 1 === n2[3]) && (i.warn(le, "Extradata is Annex B — stripping description (decoder will use inline parameter sets from keyframes)."), n2 = void 0), n2 && n2.length > 0 && (a2.description = n2);
+    n2 && n2.length > 4 && (0 === n2[0] && 0 === n2[1] && 1 === n2[2] || 0 === n2[0] && 0 === n2[1] && 0 === n2[2] && 1 === n2[3]) && (i.warn(ue, "Extradata is Annex B — stripping description (decoder will use inline parameter sets from keyframes)."), n2 = void 0), n2 && n2.length > 0 && (a2.description = n2);
     try {
       let t3;
       try {
@@ -2995,51 +2995,51 @@ class MoviVideoDecoder {
         const e3 = { ...a2 };
         delete e3.hardwareAcceleration;
         const r3 = await VideoDecoder.isConfigSupported(e3).catch(() => ({ supported: false, config: e3 }));
-        r3.supported && (i.info(le, `Hardware decode unavailable for ${a2.codec}; using no-preference.`), delete a2.hardwareAcceleration, t3 = r3);
+        r3.supported && (i.info(ue, `Hardware decode unavailable for ${a2.codec}; using no-preference.`), delete a2.hardwareAcceleration, t3 = r3);
       }
       if (!t3.supported && a2.colorSpace) {
-        i.info(le, "Codec config failed with color space. Retrying without explicit color metadata.");
+        i.info(ue, "Codec config failed with color space. Retrying without explicit color metadata.");
         const e3 = { ...a2 };
         delete e3.colorSpace;
         const r3 = await VideoDecoder.isConfigSupported(e3);
-        r3.supported && (i.info(le, "Codec supported WITHOUT explicit color metadata. Using stripped config."), delete a2.colorSpace, t3 = r3);
+        r3.supported && (i.info(ue, "Codec supported WITHOUT explicit color metadata. Using stripped config."), delete a2.colorSpace, t3 = r3);
       }
       if (!t3.supported) {
-        if (i.warn(le, `Codec config not supported: ${a2.codec}`), s2 && s2.startsWith("hvc1.4")) {
+        if (i.warn(ue, `Codec config not supported: ${a2.codec}`), s2 && s2.startsWith("hvc1.4")) {
           const r4 = e2.level ? `L${e2.level}` : "L120", n3 = [`hvc1.4.10.${r4}.B0`, "hvc1.4.10.L93.B0", `hvc1.2.4.${r4}.B0`];
           for (const e3 of n3) {
             if (e3 === s2) continue;
-            i.info(le, `HEVC Rext: trying fallback ${e3}`);
+            i.info(ue, `HEVC Rext: trying fallback ${e3}`);
             const r5 = { ...a2, codec: e3 };
             if (r5.colorSpace && delete r5.colorSpace, e3.startsWith("hvc1.2") && r5.description) {
               const e4 = r5.description instanceof Uint8Array ? r5.description : new Uint8Array(r5.description);
               if (e4.length > 5 && 4 == (31 & e4[1])) {
                 const t4 = new Uint8Array(e4);
-                t4[1] = 224 & t4[1] | 2, r5.description = t4, i.info(le, "Patched extradata: Profile IDC 4 → 2 (Main10)");
+                t4[1] = 224 & t4[1] | 2, r5.description = t4, i.info(ue, "Patched extradata: Profile IDC 4 → 2 (Main10)");
               }
             }
             const n4 = await VideoDecoder.isConfigSupported(r5);
             if (n4.supported) {
-              i.info(le, `HEVC Rext fallback ${e3} IS supported. Switching.`), a2.codec = e3, a2.description = r5.description, a2.colorSpace && delete a2.colorSpace, s2 = e3, t3 = n4;
+              i.info(ue, `HEVC Rext fallback ${e3} IS supported. Switching.`), a2.codec = e3, a2.description = r5.description, a2.colorSpace && delete a2.colorSpace, s2 = e3, t3 = n4;
               break;
             }
           }
         }
         const r3 = this.mapCodecToWebCodecs(e2.codec, e2.width, e2.height, e2.profile, e2.level);
         if (r3 && r3 !== s2) {
-          i.info(le, `Retrying with manual codec string: ${r3}`);
+          i.info(ue, `Retrying with manual codec string: ${r3}`);
           const e3 = { ...a2, codec: r3 };
           e3.colorSpace && delete e3.colorSpace;
           const n3 = await VideoDecoder.isConfigSupported(e3);
-          n3.supported && (i.info(le, `Manual codec string IS supported. Using ${r3} instead of ${s2}`), a2.codec = r3, a2.colorSpace && delete a2.colorSpace, s2 = r3, t3 = n3);
+          n3.supported && (i.info(ue, `Manual codec string IS supported. Using ${r3} instead of ${s2}`), a2.codec = r3, a2.colorSpace && delete a2.colorSpace, s2 = r3, t3 = n3);
         }
-        if (!t3.supported) return i.warn(le, `Codec not supported by hardware: ${s2}. Trying software.`), this.initSoftwareDecoder();
+        if (!t3.supported) return i.warn(ue, `Codec not supported by hardware: ${s2}. Trying software.`), this.initSoftwareDecoder();
       }
     } catch (e3) {
-      if (i.warn(le, `Codec config check failed: ${s2}`, e3), !a2.colorSpace) return this.initSoftwareDecoder();
+      if (i.warn(ue, `Codec config check failed: ${s2}`, e3), !a2.colorSpace) return this.initSoftwareDecoder();
       try {
-        if (i.info(le, "Retrying config check without color space after error"), delete a2.colorSpace, !(await VideoDecoder.isConfigSupported(a2)).supported) return this.initSoftwareDecoder();
-        i.info(le, "Codec check passed after removing color space. Proceeding.");
+        if (i.info(ue, "Retrying config check without color space after error"), delete a2.colorSpace, !(await VideoDecoder.isConfigSupported(a2)).supported) return this.initSoftwareDecoder();
+        i.info(ue, "Codec check passed after removing color space. Proceeding.");
       } catch (e4) {
         return this.initSoftwareDecoder();
       }
@@ -3047,18 +3047,18 @@ class MoviVideoDecoder {
     this.decoder = new VideoDecoder({ output: (e3) => {
       this.openGopErrorCount = 0, this.errorCount = 0, this.isResurrecting = false, this.justFlushed = false, this.postFlushKeyframeRejects = 0, this.onFrame ? this.onFrame(e3) : this.pendingFrames.push(e3);
     }, error: (e3) => {
-      i.error(le, "Decoder error", e3), this.recoverFromError(e3);
+      i.error(ue, "Decoder error", e3), this.recoverFromError(e3);
     } }), this.lastConfig = a2;
     try {
-      return this.decoder.configure(a2), this.isConfigured = true, i.info(le, `Configured: ${s2} ${e2.width}x${e2.height} hwAccel=${a2.hardwareAcceleration ?? "no-preference"}`), true;
+      return this.decoder.configure(a2), this.isConfigured = true, i.info(ue, `Configured: ${s2} ${e2.width}x${e2.height} hwAccel=${a2.hardwareAcceleration ?? "no-preference"}`), true;
     } catch (e3) {
-      return i.error(le, "Failed to configure decoder", e3), this.initSoftwareDecoder();
+      return i.error(ue, "Failed to configure decoder", e3), this.initSoftwareDecoder();
     }
   }
   async initSoftwareDecoder() {
     if (!this.currentTrack) return false;
-    if (!this.bindings) return i.error(le, "Cannot switch to software decoder: bindings not available"), false;
-    if (i.info(le, "Initializing software decoder fallback"), this.useSoftware = true, this.decoder) {
+    if (!this.bindings) return i.error(ue, "Cannot switch to software decoder: bindings not available"), false;
+    if (i.info(ue, "Initializing software decoder fallback"), this.useSoftware = true, this.decoder) {
       try {
         this.decoder.close();
       } catch (e3) {
@@ -3068,12 +3068,12 @@ class MoviVideoDecoder {
     this.swDecoder = new SoftwareVideoDecoder(this.bindings), this.swDecoder.setOnFrame((e3) => {
       this.onFrame ? this.onFrame(e3) : this.pendingFrames.push(e3);
     }), this.swDecoder.setOnError((e3) => {
-      i.error(le, "Software decoder error", e3), this.onError && this.onError(e3);
+      i.error(ue, "Software decoder error", e3), this.onError && this.onError(e3);
     });
     const e2 = this.targetFps > 0 ? this.targetFps : this.currentTrack.frameRate > 60 ? 60 : 0, t2 = await this.swDecoder.configure(this.currentTrack, e2);
-    if (e2 > 0 && this.currentTrack.frameRate > e2 && i.info(le, `Software decoder FPS capped: ${this.currentTrack.frameRate}fps → ${e2}fps`), t2) {
+    if (e2 > 0 && this.currentTrack.frameRate > e2 && i.info(ue, `Software decoder FPS capped: ${this.currentTrack.frameRate}fps → ${e2}fps`), t2) {
       if (this.isConfigured = true, this.setWaitingForKeyframe(true), this.pendingChunks.length > 0) {
-        i.info(le, `Processing ${this.pendingChunks.length} pending chunks for software decoder`);
+        i.info(ue, `Processing ${this.pendingChunks.length} pending chunks for software decoder`);
         const e3 = [...this.pendingChunks];
         this.pendingChunks = [];
         for (const t3 of e3) this.decode(t3.data, t3.timestamp, t3.keyframe);
@@ -3091,7 +3091,7 @@ class MoviVideoDecoder {
   recreateDecoder() {
     if (this.useSoftware) return false;
     if (!this.lastConfig) return false;
-    this.lastRecreateTime = performance.now(), i.warn(le, "Recreating decoder to recover from error");
+    this.lastRecreateTime = performance.now(), i.warn(ue, "Recreating decoder to recover from error");
     try {
       this.decoder?.close();
     } catch (e2) {
@@ -3099,12 +3099,12 @@ class MoviVideoDecoder {
     this.decoder = new VideoDecoder({ output: (e2) => {
       this.openGopErrorCount = 0, this.errorCount = 0, this.isResurrecting = false, this.justFlushed = false, this.postFlushKeyframeRejects = 0, this.onFrame ? this.onFrame(e2) : this.pendingFrames.push(e2);
     }, error: (e2) => {
-      i.error(le, "Decoder error", e2), this.recoverFromError(e2);
+      i.error(ue, "Decoder error", e2), this.recoverFromError(e2);
     } });
     try {
       return this.decoder.configure(this.lastConfig), this.isConfigured = true, this.justFlushed = true, this.setWaitingForKeyframe(true), true;
     } catch (e2) {
-      return i.error(le, "Failed to recreate decoder", e2), false;
+      return i.error(ue, "Failed to recreate decoder", e2), false;
     }
   }
   lastChunkInfo = null;
@@ -3118,8 +3118,8 @@ class MoviVideoDecoder {
   decode(e2, t2, r2, s2, a2 = true, n2 = false, o2 = false) {
     const h2 = r2 && !a2;
     if (this.lastChunkInfo = { timestamp: t2, keyframe: r2, size: e2.byteLength, wasIdrWhileWaiting: r2 && !h2 && this.waitingForKeyframe }, !this.isConfigured) return;
-    if (this.chunksSinceKeyframeWait++, 1 !== this.playbackRate && !r2 && e2.byteLength < MoviVideoDecoder.MIN_DELTA_PACKET_BYTES && this.chunksSinceKeyframeWait <= MoviVideoDecoder.TINY_PACKET_DROP_WINDOW) return void i.debug(le, `Dropping ${e2.byteLength}-byte non-keyframe packet at ${t2.toFixed(3)}s (corrupt/too small, startup window at ${this.playbackRate}x)`);
-    if (this.useSoftware && this.swDecoder && (r2 && !this.forceSoftware && !this.requiresSoftware && this.shouldRetryHardware(e2) && (i.info(le, `Found a sync frame! Attempting hardware resurrection (Attempt ${this.hardwareRetryCount + 1})...`), this.lastHardwareRetryTime = performance.now(), this.hardwareRetryCount++, this.useSoftware = false, this.openGopErrorCount = 0, this.isResurrecting = true, this.recreateDecoder() || (this.useSoftware = true, this.isResurrecting = false)), this.useSoftware)) {
+    if (this.chunksSinceKeyframeWait++, 1 !== this.playbackRate && !r2 && e2.byteLength < MoviVideoDecoder.MIN_DELTA_PACKET_BYTES && this.chunksSinceKeyframeWait <= MoviVideoDecoder.TINY_PACKET_DROP_WINDOW) return void i.debug(ue, `Dropping ${e2.byteLength}-byte non-keyframe packet at ${t2.toFixed(3)}s (corrupt/too small, startup window at ${this.playbackRate}x)`);
+    if (this.useSoftware && this.swDecoder && (r2 && !this.forceSoftware && !this.requiresSoftware && this.shouldRetryHardware(e2) && (i.info(ue, `Found a sync frame! Attempting hardware resurrection (Attempt ${this.hardwareRetryCount + 1})...`), this.lastHardwareRetryTime = performance.now(), this.hardwareRetryCount++, this.useSoftware = false, this.openGopErrorCount = 0, this.isResurrecting = true, this.recreateDecoder() || (this.useSoftware = true, this.isResurrecting = false)), this.useSoftware)) {
       if (!this.swDecoder.configured) return void this.pendingChunks.push({ data: e2, timestamp: t2, keyframe: r2 });
       if (this.waitingForKeyframe && !r2) return;
       return r2 && this.setWaitingForKeyframe(false), void this.swDecoder.decode(e2, t2, s2 ?? t2, r2);
@@ -3127,7 +3127,7 @@ class MoviVideoDecoder {
     if (!this.decoder) return;
     if ("closed" === this.decoder.state) return void (this.isRecovering || this.recoverFromError(new Error("Decoder closed unexpectedly")));
     if (this.waitingForKeyframe && !r2) return void this.skippedWhileWaiting++;
-    if (r2 && this.waitingForKeyframe && this.skippedWhileWaiting > 0 && (i.debug(le, `Skipped ${this.skippedWhileWaiting} non-keyframes while waiting for keyframe`), this.skippedWhileWaiting = 0), this.skipRaslAfterResume && !r2) {
+    if (r2 && this.waitingForKeyframe && this.skippedWhileWaiting > 0 && (i.debug(ue, `Skipped ${this.skippedWhileWaiting} non-keyframes while waiting for keyframe`), this.skippedWhileWaiting = 0), this.skipRaslAfterResume && !r2) {
       if (n2) return;
       this.skipRaslAfterResume = false;
     }
@@ -3140,14 +3140,14 @@ class MoviVideoDecoder {
     if (this.isAnnexBSource && this._loggedConversion < 2 && (r2 && 0 === this._loggedConversion || !r2 && 1 === this._loggedConversion)) {
       this._loggedConversion++;
       const t3 = MoviVideoDecoder.splitAnnexBNalUnits(e2).map((e3) => e3[0] >> 1 & 63), s3 = t3.filter((e3) => e3 < 62), a3 = Array.from(e2.subarray(0, 8)).map((e3) => e3.toString(16).padStart(2, "0")).join(" ");
-      i.info(le, `Annex B ${r2 ? "KEY" : "DELTA"}: ${e2.length}B → ${d2.length}B, NALs: [${t3}], kept: [${s3}], head: ${a3}`);
+      i.info(ue, `Annex B ${r2 ? "KEY" : "DELTA"}: ${e2.length}B → ${d2.length}B, NALs: [${t3}], kept: [${s3}], head: ${a3}`);
     }
     if (r2 && (this.skipRaslAfterResume = this.waitingForKeyframe, this.setWaitingForKeyframe(false)), this.errorCount >= MoviVideoDecoder.MAX_ERRORS) return;
-    const c2 = h2 && !this.justFlushed, l2 = new EncodedVideoChunk({ type: c2 ? "delta" : r2 ? "key" : "delta", timestamp: 1e6 * t2, data: d2 });
+    const c2 = h2 && !this.justFlushed, u2 = new EncodedVideoChunk({ type: c2 ? "delta" : r2 ? "key" : "delta", timestamp: 1e6 * t2, data: d2 });
     try {
-      this.decoder.decode(l2);
+      this.decoder.decode(u2);
     } catch (s3) {
-      this.recoverFromError(s3), this.useSoftware && (i.warn(le, "Hardware decode failed, queuing chunk for software decoder"), this.pendingChunks.push({ data: e2, timestamp: t2, keyframe: r2 }));
+      this.recoverFromError(s3), this.useSoftware && (i.warn(ue, "Hardware decode failed, queuing chunk for software decoder"), this.pendingChunks.push({ data: e2, timestamp: t2, keyframe: r2 }));
     }
   }
   recoverFromError(e2) {
@@ -3165,36 +3165,36 @@ class MoviVideoDecoder {
     t2 || (r2 - this.lastErrorTime > 3e4 ? this.errorCount = 1 : this.errorCount++, this.lastErrorTime = r2);
     const s2 = { message: e2.message, name: e2.name, lastChunk: this.lastChunkInfo, queueSize: this.decoder?.decodeQueueSize, state: this.decoder?.state, codec: this.lastConfig?.codec, errorCount: this.errorCount, isUnsupportedProfile: false };
     if (t2) {
-      if (this.isResurrecting) return i.warn(le, "Hardware resurrection failed on sync frame. Returning to software decoder."), this.isResurrecting = false, void this.initSoftwareDecoder();
-      this.openGopErrorCount++, i.warn(le, `Decoding warning: Frame was marked as keyframe but decoder rejected it (Open GOP?). Timestamp: ${this.lastChunkInfo?.timestamp}. Count (OpenGOP): ${this.openGopErrorCount}`);
+      if (this.isResurrecting) return i.warn(ue, "Hardware resurrection failed on sync frame. Returning to software decoder."), this.isResurrecting = false, void this.initSoftwareDecoder();
+      this.openGopErrorCount++, i.warn(ue, `Decoding warning: Frame was marked as keyframe but decoder rejected it (Open GOP?). Timestamp: ${this.lastChunkInfo?.timestamp}. Count (OpenGOP): ${this.openGopErrorCount}`);
       const e3 = this.lastConfig?.codec ?? "", t3 = e3.startsWith("hvc1.") || e3.startsWith("hev1."), r3 = true === this.lastChunkInfo?.wasIdrWhileWaiting;
-      if (!MoviVideoDecoder.DISABLE_OPENGOP_SW_FALLBACK && (this.justFlushed || r3) && t3 && !this.forceSoftware && !this.useSoftware && (this.postFlushKeyframeRejects++, this.postFlushKeyframeRejects >= MoviVideoDecoder.POST_FLUSH_REJECT_LIMIT)) return i.error(le, `Hardware rejected ${this.postFlushKeyframeRejects} ${r3 ? "genuine IDR" : "post-flush"} keyframes — falling back to software decoder for this stream.`), void this.initSoftwareDecoder();
+      if (!MoviVideoDecoder.DISABLE_OPENGOP_SW_FALLBACK && (this.justFlushed || r3) && t3 && !this.forceSoftware && !this.useSoftware && (this.postFlushKeyframeRejects++, this.postFlushKeyframeRejects >= MoviVideoDecoder.POST_FLUSH_REJECT_LIMIT)) return i.error(ue, `Hardware rejected ${this.postFlushKeyframeRejects} ${r3 ? "genuine IDR" : "post-flush"} keyframes — falling back to software decoder for this stream.`), void this.initSoftwareDecoder();
       const s3 = this.lastConfig?.codec ?? "", a2 = !s3.startsWith("hvc1.") && !s3.startsWith("hev1.") || this.justFlushed ? 15 : MoviVideoDecoder.MID_STREAM_OPENGOP_REJECT_LIMIT;
-      if (!MoviVideoDecoder.DISABLE_OPENGOP_SW_FALLBACK && this.openGopErrorCount > a2) return i.error(le, `Persistent Open GOP errors detected (${this.openGopErrorCount} > ${a2}). Switching to software decoder.`), void this.initSoftwareDecoder();
+      if (!MoviVideoDecoder.DISABLE_OPENGOP_SW_FALLBACK && this.openGopErrorCount > a2) return i.error(ue, `Persistent Open GOP errors detected (${this.openGopErrorCount} > ${a2}). Switching to software decoder.`), void this.initSoftwareDecoder();
       if (this.decoder && "closed" !== this.decoder.state) try {
         return this.decoder.reset(), this.decoder.configure(this.lastConfig), void this.setWaitingForKeyframe(true);
       } catch (e4) {
-        i.warn(le, "Fast reset failed during Open GOP recovery, proceeding to full recreation");
+        i.warn(ue, "Fast reset failed during Open GOP recovery, proceeding to full recreation");
       }
-    } else i.error(le, `Decoding error details: ${JSON.stringify(s2)}. Count: ${this.errorCount}`);
-    if (this.errorCount >= MoviVideoDecoder.MAX_ERRORS) return i.error(le, `Max errors (${MoviVideoDecoder.MAX_ERRORS}) exceeded within short duration. Emitting fatal error.`), void (this.onError && this.onError(e2));
+    } else i.error(ue, `Decoding error details: ${JSON.stringify(s2)}. Count: ${this.errorCount}`);
+    if (this.errorCount >= MoviVideoDecoder.MAX_ERRORS) return i.error(ue, `Max errors (${MoviVideoDecoder.MAX_ERRORS}) exceeded within short duration. Emitting fatal error.`), void (this.onError && this.onError(e2));
     if (4 === this.currentProfile && this.lastConfig?.codec.startsWith("hvc1.")) {
-      i.warn(le, "HEVC Rext profile error.");
+      i.warn(ue, "HEVC Rext profile error.");
       const e3 = `hvc1.4.10.${this.currentTrack?.level ? `L${this.currentTrack.level}` : "L120"}.B0`;
       if (this.lastConfig.codec !== e3) {
-        i.info(le, `Attempting recovery by switching to Rext fallback: ${e3}`), this.lastConfig.codec = e3, this.openGopErrorCount = 0;
+        i.info(ue, `Attempting recovery by switching to Rext fallback: ${e3}`), this.lastConfig.codec = e3, this.openGopErrorCount = 0;
         try {
           if (this.decoder && "closed" !== this.decoder.state) return this.decoder.configure(this.lastConfig), this.setWaitingForKeyframe(true), void (this.errorCount = 0);
           if (this.recreateDecoder()) return void (this.errorCount = 0);
         } catch (e4) {
-          i.error(le, "Fallback configuration failed", e4);
+          i.error(ue, "Fallback configuration failed", e4);
         }
-      } else i.warn(le, "HEVC Rext fallback string also failed. Attempting reset/recreation.");
+      } else i.warn(ue, "HEVC Rext fallback string also failed. Attempting reset/recreation.");
     }
     if (this.decoder && "closed" !== this.decoder.state) try {
-      return i.warn(le, "Attempting fast reset recovery"), this.decoder.reset(), this.decoder.configure(this.lastConfig), void this.setWaitingForKeyframe(true);
+      return i.warn(ue, "Attempting fast reset recovery"), this.decoder.reset(), this.decoder.configure(this.lastConfig), void this.setWaitingForKeyframe(true);
     } catch (e3) {
-      i.warn(le, "Fast reset failed, trying full recreation");
+      i.warn(ue, "Fast reset failed, trying full recreation");
     }
     this.recreateDecoder();
   }
@@ -3204,18 +3204,18 @@ class MoviVideoDecoder {
     if ("hevc" === n2 || "h265" === n2 || "hvc1" === n2) {
       if (4 === s2) {
         const e3 = a2 ? `L${a2}` : "L120";
-        return i.info(le, `Detected HEVC Rext profile. Using hvc1.4.10.${e3}.B0`), `hvc1.4.10.${e3}.B0`;
+        return i.info(ue, `Detected HEVC Rext profile. Using hvc1.4.10.${e3}.B0`), `hvc1.4.10.${e3}.B0`;
       }
       if (2 === s2) {
         const e3 = a2 ? `L${a2}` : "L153";
-        return i.info(le, `Mapping HEVC Main 10 profile (2) to hvc1.2.4.${e3}.B0`), `hvc1.2.4.${e3}.B0`;
+        return i.info(ue, `Mapping HEVC Main 10 profile (2) to hvc1.2.4.${e3}.B0`), `hvc1.2.4.${e3}.B0`;
       }
       return 1 === s2 ? `hvc1.1.6.${a2 ? `L${a2}` : "L120"}.B0` : "hvc1.1.6.L93.B0";
     }
     if ("vp8" === n2) return "vp8";
     if ("vp9" === n2) {
       const e3 = (t2 && t2 > 1920 ? 51 : t2 && t2 > 1280 ? 41 : 31).toString().padStart(2, "0");
-      return 1 === s2 ? (i.info(le, `Mapping VP9 Profile 1 to vp09.01.${e3}.08.02 (4:2:2 8-bit)`), `vp09.01.${e3}.08.02.01.01.01.00`) : 2 === s2 ? (i.info(le, `Mapping VP9 Profile 2 to vp09.02.${e3}.10 (HDR)`), `vp09.02.${e3}.10.01.09.16.09.00`) : 3 === s2 ? `vp09.03.${e3}.10.02.09.16.09.00` : `vp09.00.${e3}.08.01.01.01.01.00`;
+      return 1 === s2 ? (i.info(ue, `Mapping VP9 Profile 1 to vp09.01.${e3}.08.02 (4:2:2 8-bit)`), `vp09.01.${e3}.08.02.01.01.01.00`) : 2 === s2 ? (i.info(ue, `Mapping VP9 Profile 2 to vp09.02.${e3}.10 (HDR)`), `vp09.02.${e3}.10.01.09.16.09.00`) : 3 === s2 ? `vp09.03.${e3}.10.02.09.16.09.00` : `vp09.00.${e3}.08.01.01.01.01.00`;
     }
     return "av1" === n2 ? "av01.0.01M.08" : "vvc" === n2 || "vvc1" === n2 || "vvi1" === n2 ? "vvc1.1.L51" : "h263" === n2 || "h263p" === n2 ? "h263" : "mpeg4" === n2 || "mp4v" === n2 ? "mp4v.20.9" : null;
   }
@@ -3232,11 +3232,11 @@ class MoviVideoDecoder {
     if (!e2.startsWith("hvc1.") && !e2.startsWith("hev1.") || this.forceSoftware || this.useSoftware || !this.recreateDecoder()) try {
       await Promise.race([this.decoder.flush(), new Promise((e3, t2) => setTimeout(() => t2(new Error("flush timeout")), 1e3))]);
     } catch (e3) {
-      i.warn(le, "Flush timeout or error, resetting decoder", e3);
+      i.warn(ue, "Flush timeout or error, resetting decoder", e3);
       try {
         this.decoder.reset(), this.lastConfig && this.decoder.configure(this.lastConfig);
       } catch (e4) {
-        i.error(le, "Reset after flush timeout failed", e4);
+        i.error(ue, "Reset after flush timeout failed", e4);
       }
     }
   }
@@ -3244,7 +3244,7 @@ class MoviVideoDecoder {
     if (this.openGopErrorCount = 0, this.swDecoder && this.swDecoder.reset(), this.decoder) try {
       this.decoder.reset();
     } catch (e2) {
-      i.error(le, "Reset error", e2);
+      i.error(ue, "Reset error", e2);
     }
     for (const e2 of this.pendingFrames) e2.close();
     this.pendingFrames = [], this.pendingChunks = [];
@@ -3257,7 +3257,7 @@ class MoviVideoDecoder {
       }
       this.decoder = null;
     }
-    this.isConfigured = false, this.onFrame = null, this.onError = null, this.useSoftware = false, i.debug(le, "Closed");
+    this.isConfigured = false, this.onFrame = null, this.onError = null, this.useSoftware = false, i.debug(ue, "Closed");
   }
   get configured() {
     return this.isConfigured;
@@ -3343,13 +3343,13 @@ class MoviVideoDecoder {
       const t3 = e3[0] >> 1 & 63;
       32 === t3 ? s2.push(e3) : 33 === t3 ? a2.push(e3) : 34 === t3 && n2.push(e3);
     }
-    if (0 === a2.length) return i.warn(le, "No SPS found in Annex B extradata"), null;
+    if (0 === a2.length) return i.warn(ue, "No SPS found in Annex B extradata"), null;
     const o2 = s2[0] || a2[0], h2 = this.removeEpb(o2), d2 = 32 == (h2[0] >> 1 & 63) ? 6 : 3;
-    let c2 = t2?.profile ?? 2, l2 = 0, u2 = new Uint8Array([32, 0, 0, 0]), f2 = new Uint8Array(6), m2 = t2?.level ?? 153;
+    let c2 = t2?.profile ?? 2, u2 = 0, l2 = new Uint8Array([32, 0, 0, 0]), f2 = new Uint8Array(6), m2 = t2?.level ?? 153;
     if (h2.length >= d2 + 12) {
       const e3 = h2[d2];
-      c2 = 31 & e3, l2 = e3 >> 5 & 1, u2 = h2.slice(d2 + 1, d2 + 5), f2 = h2.slice(d2 + 5, d2 + 11), m2 = h2[d2 + 11], i.debug(le, `hvcC from NAL: profile=${c2}, tier=${l2}, level=${m2}`);
-    } else null == t2?.profile && null == t2?.level || i.debug(le, `hvcC from track metadata: profile=${c2}, level=${m2}`);
+      c2 = 31 & e3, u2 = e3 >> 5 & 1, l2 = h2.slice(d2 + 1, d2 + 5), f2 = h2.slice(d2 + 5, d2 + 11), m2 = h2[d2 + 11], i.debug(ue, `hvcC from NAL: profile=${c2}, tier=${u2}, level=${m2}`);
+    } else null == t2?.profile && null == t2?.level || i.debug(ue, `hvcC from track metadata: profile=${c2}, level=${m2}`);
     const g2 = [];
     s2.length > 0 && g2.push({ type: 32, nalus: s2 }), a2.length > 0 && g2.push({ type: 33, nalus: a2 }), n2.length > 0 && g2.push({ type: 34, nalus: n2 });
     let p2 = 23;
@@ -3359,7 +3359,7 @@ class MoviVideoDecoder {
     }
     const b2 = new Uint8Array(p2), v2 = new DataView(b2.buffer);
     let S2 = 0;
-    b2[S2++] = 1, b2[S2++] = l2 << 5 | 31 & c2, b2[S2++] = u2[0], b2[S2++] = u2[1], b2[S2++] = u2[2], b2[S2++] = u2[3];
+    b2[S2++] = 1, b2[S2++] = u2 << 5 | 31 & c2, b2[S2++] = l2[0], b2[S2++] = l2[1], b2[S2++] = l2[2], b2[S2++] = l2[3];
     for (let e3 = 0; e3 < 6; e3++) b2[S2++] = f2[e3];
     b2[S2++] = m2, v2.setUint16(S2, 61440), S2 += 2, b2[S2++] = 252, b2[S2++] = 253, b2[S2++] = 250, b2[S2++] = 250, v2.setUint16(S2, 0), S2 += 2, b2[S2++] = 15, b2[S2++] = g2.length;
     for (const e3 of g2) {
@@ -3377,7 +3377,7 @@ class MoviVideoDecoder {
       const t3 = 31 & e3[0];
       7 === t3 ? r2.push(e3) : 8 === t3 && s2.push(e3);
     }
-    if (0 === r2.length) return i.warn(le, "No SPS found in Annex B extradata for AVC"), null;
+    if (0 === r2.length) return i.warn(ue, "No SPS found in Annex B extradata for AVC"), null;
     const a2 = r2[0];
     let n2 = 6;
     n2 += 1;
@@ -3426,7 +3426,7 @@ class MoviVideoDecoder {
     return n2;
   }
 }
-const ue = "SoftwareAudioDecoder";
+const le = "SoftwareAudioDecoder";
 class SoftwareAudioDecoder {
   bindings;
   onData = null;
@@ -3455,7 +3455,7 @@ class SoftwareAudioDecoder {
   async configure(e2) {
     this.trackIndex = e2.id;
     const t2 = this.bindings.enableDecoder(this.trackIndex);
-    return t2 < 0 ? (i.error(ue, `Failed to enable software decoder for stream ${this.trackIndex}: ${t2}`), false) : (this.bindings.enableAudioDownmix(this._downmix), this.isConfigured = true, i.info(ue, `Configured software decoder for stream ${this.trackIndex}`), true);
+    return t2 < 0 ? (i.error(le, `Failed to enable software decoder for stream ${this.trackIndex}: ${t2}`), false) : (this.bindings.enableAudioDownmix(this._downmix), this.isConfigured = true, i.info(le, `Configured software decoder for stream ${this.trackIndex}`), true);
   }
   async flush() {
     this.isConfigured && this.bindings.flushDecoder(this.trackIndex), this.consecutiveFailures = 0, this.isBroken = false, this.pending = [], this.pendingSamples = 0;
@@ -3469,13 +3469,13 @@ class SoftwareAudioDecoder {
   decode(e2, t2, r2) {
     if (!this.isConfigured || this.isBroken) return;
     const s2 = this.bindings.sendPacket(this.trackIndex, e2, t2, t2, r2);
-    if (s2 < 0) return this.consecutiveFailures++, 1 === this.consecutiveFailures && i.warn(ue, `sendPacket failed: ${s2}`), void (this.consecutiveFailures >= SoftwareAudioDecoder.MAX_CONSECUTIVE_FAILURES && (this.isBroken = true, i.error(ue, `Audio decoder disabled after ${this.consecutiveFailures} consecutive sendPacket failures (last: ${s2}). Playback continues without audio.`)));
+    if (s2 < 0) return this.consecutiveFailures++, 1 === this.consecutiveFailures && i.warn(le, `sendPacket failed: ${s2}`), void (this.consecutiveFailures >= SoftwareAudioDecoder.MAX_CONSECUTIVE_FAILURES && (this.isBroken = true, i.error(le, `Audio decoder disabled after ${this.consecutiveFailures} consecutive sendPacket failures (last: ${s2}). Playback continues without audio.`)));
     for (this.consecutiveFailures = 0; 0 === this.bindings.receiveFrame(this.trackIndex); ) this.processDecodedFrame(t2);
   }
   decodeBatch(e2) {
     if (!this.isConfigured || this.isBroken || 0 === e2.length) return 0;
     const t2 = this.bindings.decodeAudioBatch(this.trackIndex, e2);
-    if (t2 < 0) return this.consecutiveFailures++, 1 === this.consecutiveFailures && i.warn(ue, `decodeAudioBatch failed: ${t2}`), this.consecutiveFailures >= SoftwareAudioDecoder.MAX_CONSECUTIVE_FAILURES && (this.isBroken = true, i.error(ue, `Audio decoder disabled after ${this.consecutiveFailures} consecutive batch failures (last: ${t2}). Playback continues without audio.`)), 0;
+    if (t2 < 0) return this.consecutiveFailures++, 1 === this.consecutiveFailures && i.warn(le, `decodeAudioBatch failed: ${t2}`), this.consecutiveFailures >= SoftwareAudioDecoder.MAX_CONSECUTIVE_FAILURES && (this.isBroken = true, i.error(le, `Audio decoder disabled after ${this.consecutiveFailures} consecutive batch failures (last: ${t2}). Playback continues without audio.`)), 0;
     this.consecutiveFailures = 0;
     const r2 = this.bindings.audioBatchSamples();
     if (r2 <= 0 || !this.onData) return t2;
@@ -3490,7 +3490,7 @@ class SoftwareAudioDecoder {
       }
       this.enqueueFrame({ planes: i2, numberOfFrames: r2, numberOfChannels: s2, sampleRate: a2, timestamp: 1e6 * n2 });
     } catch (e3) {
-      i.error(ue, "Batched PCM extraction failed", e3), this.onError && this.onError(e3);
+      i.error(le, "Batched PCM extraction failed", e3), this.onError && this.onError(e3);
     }
     return t2;
   }
@@ -3504,9 +3504,9 @@ class SoftwareAudioDecoder {
         n2[e3] = new Float32Array(r3);
       }
       const o2 = { planes: n2, numberOfFrames: t2, numberOfChannels: r2, sampleRate: s2, timestamp: 1e6 * e2 };
-      Math.random() < 0.01 && i.debug(ue, `Audio data: ${r2}ch, ${t2} frames`), this.enqueueFrame(o2);
+      Math.random() < 0.01 && i.debug(le, `Audio data: ${r2}ch, ${t2} frames`), this.enqueueFrame(o2);
     } catch (e3) {
-      i.error(ue, "PCM frame extraction failed", e3), this.onError && this.onError(e3);
+      i.error(le, "PCM frame extraction failed", e3), this.onError && this.onError(e3);
     }
   }
   enqueueFrame(e2) {
@@ -3804,15 +3804,20 @@ class CanvasRenderer {
   _perfWindowStart = 0;
   _perfWindowBaseCount = 0;
   _perfDeficitWindows = 0;
+  _perfStuckWindows = 0;
+  _stuckWindowStart = 0;
+  _stuckBaseCount = 0;
   _onPerformanceDegrade = null;
   static PERF_WINDOW_MS = 1e3;
   static PERF_DEFICIT_RATIO = 0.7;
   static PERF_DEFICIT_WINDOWS = 2;
+  static PERF_STUCK_WINDOWS = 4;
   static PERF_WARMUP_FRAMES = 60;
   static PERF_MIN_CAP_FPS = 24;
   static PERF_MIN_ACHIEVED_FPS = 5;
   getAudioTime = null;
   _isAudioHealthy = null;
+  _shouldMeasurePerf = null;
   presentationStartTime = 0;
   presentationStartPts = 0;
   lastPresentedPts = -1;
@@ -3886,7 +3891,7 @@ class CanvasRenderer {
   configure(e2, t2, r2, s2, a2, n2, o2, h2) {
     this.isVideoConfigured = true;
     const d2 = (h2 || "").toLowerCase();
-    if (this.isHighBitDepth = d2.includes("12") || d2.includes("14") || d2.includes("16"), this.isHighBitDepth && i.info(ge, `High bit-depth content detected (${h2}), using RGBA16F texture`), 0 !== this.width && 0 !== this.height || (this.width = e2, this.height = t2, this.canvas.width = e2, this.canvas.height = t2), a2 && a2 > 0 ? (this.videoFrameRate = a2, i.debug(ge, `Video frame rate: ${a2}fps (target: 60fps)`)) : this.videoFrameRate = 60, this._presentFpsCap = 0, this._perfDegradeChecked = false, this._perfWindowStart = 0, this._perfDeficitWindows = 0, void 0 !== n2 && (this.metadataRotation = n2, this.rotation = (this.metadataRotation + this.manualRotation) % 360, this.canvas instanceof HTMLCanvasElement && (this.canvas.style.transform = `rotate(${this.rotation}deg)`, this.canvas.style.transformOrigin = "center center"), i.debug(ge, `Rotation set to: ${this.rotation}° (metadata: ${this.metadataRotation}°, manual: ${this.manualRotation}°)`)), this.lastPrimaries = r2, this.lastTransfer = s2, void 0 !== o2) this.isHDRSource = o2;
+    if (this.isHighBitDepth = d2.includes("12") || d2.includes("14") || d2.includes("16"), this.isHighBitDepth && i.info(ge, `High bit-depth content detected (${h2}), using RGBA16F texture`), 0 !== this.width && 0 !== this.height || (this.width = e2, this.height = t2, this.canvas.width = e2, this.canvas.height = t2), a2 && a2 > 0 ? (this.videoFrameRate = a2, i.debug(ge, `Video frame rate: ${a2}fps (target: 60fps)`)) : this.videoFrameRate = 60, this._presentFpsCap = 0, this._perfDegradeChecked = false, this._perfWindowStart = 0, this._perfDeficitWindows = 0, this._perfStuckWindows = 0, this._stuckWindowStart = 0, void 0 !== n2 && (this.metadataRotation = n2, this.rotation = (this.metadataRotation + this.manualRotation) % 360, this.canvas instanceof HTMLCanvasElement && (this.canvas.style.transform = `rotate(${this.rotation}deg)`, this.canvas.style.transformOrigin = "center center"), i.debug(ge, `Rotation set to: ${this.rotation}° (metadata: ${this.metadataRotation}°, manual: ${this.manualRotation}°)`)), this.lastPrimaries = r2, this.lastTransfer = s2, void 0 !== o2) this.isHDRSource = o2;
     else {
       const e3 = (r2 || "").toLowerCase(), t3 = (s2 || "").toLowerCase();
       i.debug(ge, `Checking HDR support - Primaries: '${e3}', Transfer: '${t3}'`);
@@ -4123,26 +4128,44 @@ class CanvasRenderer {
   setOnPerformanceDegrade(e2) {
     this._onPerformanceDegrade = e2;
   }
+  setShouldMeasurePerf(e2) {
+    this._shouldMeasurePerf = e2;
+  }
   samplePerformance() {
-    if (this._perfDegradeChecked || !this.isPlaying) return;
-    if (Math.abs(this.playbackRate - 1) > 0.05) return void (this._perfWindowStart = 0);
-    if (this.framesPresented <= CanvasRenderer.PERF_WARMUP_FRAMES) return this._perfWindowStart = 0, void (this._perfDeficitWindows = 0);
+    if (this._perfDegradeChecked) return;
+    if (!this.isPlaying) return this._perfWindowStart = 0, this._stuckWindowStart = 0, void (this._perfStuckWindows = 0);
+    if (this._shouldMeasurePerf && !this._shouldMeasurePerf()) return this._perfWindowStart = 0, this._perfDeficitWindows = 0, this._stuckWindowStart = 0, void (this._perfStuckWindows = 0);
+    if (Math.abs(this.playbackRate - 1) > 0.05) return this._perfWindowStart = 0, void (this._stuckWindowStart = 0);
     const e2 = performance.now();
-    if (0 === this._perfWindowStart) return this._perfWindowStart = e2, void (this._perfWindowBaseCount = this.framesPresented);
-    const t2 = e2 - this._perfWindowStart;
-    if (t2 < CanvasRenderer.PERF_WINDOW_MS) return;
-    const i2 = this.framesPresented - this._perfWindowBaseCount, r2 = i2 / (t2 / 1e3), s2 = this.videoFrameRate * (t2 / 1e3), a2 = !this._isAudioHealthy || this._isAudioHealthy(), n2 = r2 >= CanvasRenderer.PERF_MIN_ACHIEVED_FPS;
-    a2 && n2 && s2 > 0 && i2 < s2 * CanvasRenderer.PERF_DEFICIT_RATIO ? (this._perfDeficitWindows++, this._perfDeficitWindows >= CanvasRenderer.PERF_DEFICIT_WINDOWS && this.engagePresentCap(i2 / (t2 / 1e3))) : this._perfDeficitWindows = 0, this._perfWindowStart = e2, this._perfWindowBaseCount = this.framesPresented;
+    if (0 === this._stuckWindowStart) this._stuckWindowStart = e2, this._stuckBaseCount = this.framesPresented;
+    else if (e2 - this._stuckWindowStart >= CanvasRenderer.PERF_WINDOW_MS) {
+      const t3 = (this.framesPresented - this._stuckBaseCount) / ((e2 - this._stuckWindowStart) / 1e3);
+      if ((!this._isAudioHealthy || this._isAudioHealthy()) && t3 < CanvasRenderer.PERF_MIN_ACHIEVED_FPS) {
+        if (this._perfStuckWindows++, this._perfStuckWindows >= CanvasRenderer.PERF_STUCK_WINDOWS) return void this.engageDecodeBound(t3);
+      } else this._perfStuckWindows = 0;
+      this._stuckWindowStart = e2, this._stuckBaseCount = this.framesPresented;
+    }
+    if (this.framesPresented <= CanvasRenderer.PERF_WARMUP_FRAMES) return this._perfWindowStart = 0, void (this._perfDeficitWindows = 0);
+    const t2 = performance.now();
+    if (0 === this._perfWindowStart) return this._perfWindowStart = t2, void (this._perfWindowBaseCount = this.framesPresented);
+    const i2 = t2 - this._perfWindowStart;
+    if (i2 < CanvasRenderer.PERF_WINDOW_MS) return;
+    const r2 = this.framesPresented - this._perfWindowBaseCount, s2 = r2 / (i2 / 1e3), a2 = (this._presentFpsCap > 0 ? Math.min(this.videoFrameRate, this._presentFpsCap) : this.videoFrameRate) * (i2 / 1e3), n2 = !this._isAudioHealthy || this._isAudioHealthy(), o2 = s2 >= CanvasRenderer.PERF_MIN_ACHIEVED_FPS;
+    n2 && o2 && a2 > 0 && r2 < a2 * CanvasRenderer.PERF_DEFICIT_RATIO ? (this._perfDeficitWindows++, this._perfDeficitWindows >= CanvasRenderer.PERF_DEFICIT_WINDOWS && this.engagePresentCap(r2 / (i2 / 1e3))) : this._perfDeficitWindows = 0, this._perfWindowStart = t2, this._perfWindowBaseCount = this.framesPresented;
   }
   engagePresentCap(e2) {
-    this._perfDegradeChecked = true;
     const t2 = Math.max(CanvasRenderer.PERF_MIN_CAP_FPS, Math.round(this.videoFrameRate / 2));
-    if (!(t2 >= this.videoFrameRate)) {
-      this._presentFpsCap = t2, i.info(ge, `Adaptive FPS: sustained ~${e2.toFixed(0)}/${this.videoFrameRate}fps — capping presentation to ${t2}fps`);
-      try {
-        this._onPerformanceDegrade?.(t2);
-      } catch {
-      }
+    if (t2 >= this.videoFrameRate) this.engageDecodeBound(e2);
+    else {
+      if (0 === this._presentFpsCap) return this._presentFpsCap = t2, this._perfDeficitWindows = 0, this._perfWindowStart = 0, void i.info(ge, `Adaptive FPS: sustained ~${e2.toFixed(0)}/${this.videoFrameRate}fps — capping presentation to ${t2}fps before any resolution drop`);
+      i.info(ge, `Adaptive FPS: still ~${e2.toFixed(0)}/${this._presentFpsCap}fps after the cap — dropping resolution`), this.engageDecodeBound(e2);
+    }
+  }
+  engageDecodeBound(e2) {
+    this._perfDegradeChecked = true, i.warn(ge, `Decode-bound: only ~${e2.toFixed(1)}/${this.videoFrameRate}fps presented with healthy audio — signalling ABR to drop a rung`);
+    try {
+      this._onPerformanceDegrade?.(0);
+    } catch {
     }
   }
   setVR360(e2) {
@@ -4170,8 +4193,8 @@ class CanvasRenderer {
       let r3 = e3, s3 = false;
       return r3 > i3 ? (r3 = i3, s3 = true) : r3 < -i3 && (r3 = -i3, s3 = true), [r3, Math.max(-i3, Math.min(i3, t3)), s3];
     };
-    let c2, l2;
-    [this.vrYaw, this.vrYawTarget, c2] = d2(this.vrYaw, this.vrYawTarget, o2), [this.vrPitch, this.vrPitchTarget, l2] = d2(this.vrPitch, this.vrPitchTarget, h2), c2 && (this.vrYawVel = 0), l2 && (this.vrPitchVel = 0);
+    let c2, u2;
+    [this.vrYaw, this.vrYawTarget, c2] = d2(this.vrYaw, this.vrYawTarget, o2), [this.vrPitch, this.vrPitchTarget, u2] = d2(this.vrPitch, this.vrPitchTarget, h2), c2 && (this.vrYawVel = 0), u2 && (this.vrPitchVel = 0);
   }
   nudgeVR360(e2, t2, i2) {
     if (!this.vr360Enabled) return;
@@ -4474,12 +4497,12 @@ class CanvasRenderer {
         const e3 = 0.15;
         Math.abs(o2 - this.currentScaleX) < 1e-4 ? this.currentScaleX = o2 : this.currentScaleX += (o2 - this.currentScaleX) * e3, Math.abs(h2 - this.currentScaleY) < 1e-4 ? this.currentScaleY = h2 : this.currentScaleY += (h2 - this.currentScaleY) * e3;
       }
-      const d2 = a2 * this.currentScaleX, c2 = n2 * this.currentScaleY, l2 = (this.width - d2) / 2, u2 = (this.height - c2) / 2;
+      const d2 = a2 * this.currentScaleX, c2 = n2 * this.currentScaleY, u2 = (this.width - d2) / 2, l2 = (this.height - c2) / 2;
       r2.viewport(0, 0, this.width, this.height);
       const f2 = 0.08;
       this.letterboxColor[0] += (this.letterboxTarget[0] - this.letterboxColor[0]) * f2, this.letterboxColor[1] += (this.letterboxTarget[1] - this.letterboxColor[1]) * f2, this.letterboxColor[2] += (this.letterboxTarget[2] - this.letterboxColor[2]) * f2, r2.clearColor(this.letterboxColor[0] / 255, this.letterboxColor[1] / 255, this.letterboxColor[2] / 255, 1), r2.clear(r2.COLOR_BUFFER_BIT);
-      const m2 = this.height - (u2 + c2);
-      if (r2.viewport(l2, m2, d2, c2), r2.activeTexture(r2.TEXTURE0), r2.bindTexture(r2.TEXTURE_2D, this.texture), this.isHighBitDepth && !this._loggedFrameFormat) {
+      const m2 = this.height - (l2 + c2);
+      if (r2.viewport(u2, m2, d2, c2), r2.activeTexture(r2.TEXTURE0), r2.bindTexture(r2.TEXTURE_2D, this.texture), this.isHighBitDepth && !this._loggedFrameFormat) {
         this._loggedFrameFormat = true, i.info(ge, `VideoFrame format: ${e2.format}, ${e2.codedWidth}x${e2.codedHeight}, colorSpace: ${JSON.stringify(e2.colorSpace)}`);
         try {
           const t3 = new OffscreenCanvas(16, 16).getContext("2d");
@@ -4579,13 +4602,13 @@ class CanvasRenderer {
       const r2 = t2.getContext("2d");
       if (!r2) return void i.warn(ge, "Failed to create temporary canvas context for image subtitle");
       r2.drawImage(e2.image, 0, 0);
-      const s2 = t2.toDataURL("image/png"), a2 = this.canvas instanceof HTMLCanvasElement ? this.canvas : null, n2 = a2?.getBoundingClientRect(), o2 = n2?.width || this.containerWidth || this.width, h2 = n2?.height || this.containerHeight || this.height, d2 = 1920, c2 = 1080, l2 = o2 / d2, u2 = h2 / c2;
+      const s2 = t2.toDataURL("image/png"), a2 = this.canvas instanceof HTMLCanvasElement ? this.canvas : null, n2 = a2?.getBoundingClientRect(), o2 = n2?.width || this.containerWidth || this.width, h2 = n2?.height || this.containerHeight || this.height, d2 = 1920, c2 = 1080, u2 = o2 / d2, l2 = h2 / c2;
       let f2 = 1;
       if ("undefined" != typeof window && this.subtitleOverlay) {
         const e3 = window.getComputedStyle(this.subtitleOverlay).getPropertyValue("--movi-sub-size-mult").trim(), t3 = parseFloat(e3);
         Number.isFinite(t3) && t3 > 0 && (f2 = t3);
       }
-      const m2 = 0.85, g2 = Math.min(l2, u2), p2 = g2 * f2 * m2, b2 = e2.image.width * p2, v2 = e2.image.height * p2, S2 = (o2 - d2 * g2) / 2, y2 = (h2 - c2 * g2) / 2, w2 = CanvasRenderer.computeSubtitleBottomPadding(h2);
+      const m2 = 0.85, g2 = Math.min(u2, l2), p2 = g2 * f2 * m2, b2 = e2.image.width * p2, v2 = e2.image.height * p2, S2 = (o2 - d2 * g2) / 2, y2 = (h2 - c2 * g2) / 2, w2 = CanvasRenderer.computeSubtitleBottomPadding(h2);
       let k2, _2;
       if (k2 = void 0 !== e2.position?.x ? S2 + (e2.position.x + e2.image.width / 2) * g2 - b2 / 2 : (o2 - b2) / 2, e2.position?.y) _2 = y2 + (e2.position.y + e2.image.height / 2) * g2 - v2 / 2, _2 = Math.max(0, Math.min(_2, h2 - v2));
       else {
@@ -4598,11 +4621,11 @@ class CanvasRenderer {
       const P2 = CanvasRenderer.computeSubtitleBottomPadding(x2), C2 = this.subtitleControlsPadding > 0 ? this.subtitleControlsPadding : P2;
       this.subtitleOverlay.style.paddingBottom = `${C2}px`, this.subtitleOverlay.style.textAlign = "center", this.subtitleOverlay.style.boxSizing = "border-box", this.subtitleOverlay.style.margin = "0";
       let E2 = this.subtitleOverlay.querySelector("img.movi-subtitle-image");
-      if (i.debug(ge, `Rendering image subtitle in overlay: ${E2 ? "img exists" : "creating img"}, x=${k2.toFixed(0)}, y=${_2.toFixed(0)}, width=${(e2.image.width * l2).toFixed(0)}, height=${(e2.image.height * u2).toFixed(0)}`), E2 || (E2 = document.createElement("img"), E2.className = "movi-subtitle-image", E2.style.display = "block", E2.style.position = "relative", E2.style.margin = "0", E2.style.padding = "0", E2.style.border = "none", E2.style.outline = "none", this.subtitleOverlay.innerHTML = "", this.subtitleOverlay.appendChild(E2)), e2.position?.x) {
+      if (i.debug(ge, `Rendering image subtitle in overlay: ${E2 ? "img exists" : "creating img"}, x=${k2.toFixed(0)}, y=${_2.toFixed(0)}, width=${(e2.image.width * u2).toFixed(0)}, height=${(e2.image.height * l2).toFixed(0)}`), E2 || (E2 = document.createElement("img"), E2.className = "movi-subtitle-image", E2.style.display = "block", E2.style.position = "relative", E2.style.margin = "0", E2.style.padding = "0", E2.style.border = "none", E2.style.outline = "none", this.subtitleOverlay.innerHTML = "", this.subtitleOverlay.appendChild(E2)), e2.position?.x) {
         const e3 = k2 - (o2 - b2) / 2;
         E2.style.marginLeft = `${e3}px`, E2.style.marginRight = "0";
       } else E2.style.marginLeft = "auto", E2.style.marginRight = "auto";
-      E2.src = s2, E2.style.width = `${b2}px`, E2.style.height = `${v2}px`, E2.style.maxWidth = `${R2}px`, E2.style.maxHeight = `${x2}px`, E2.style.objectFit = "contain", E2.style.display = "block", E2.style.visibility = "visible", E2.style.opacity = "1", i.debug(ge, `Image subtitle rendered: src set, dimensions=${(e2.image.width * l2).toFixed(0)}x${(e2.image.height * u2).toFixed(0)}, position=(${k2.toFixed(0)}, ${_2.toFixed(0)})`);
+      E2.src = s2, E2.style.width = `${b2}px`, E2.style.height = `${v2}px`, E2.style.maxWidth = `${R2}px`, E2.style.maxHeight = `${x2}px`, E2.style.objectFit = "contain", E2.style.display = "block", E2.style.visibility = "visible", E2.style.opacity = "1", i.debug(ge, `Image subtitle rendered: src set, dimensions=${(e2.image.width * u2).toFixed(0)}x${(e2.image.height * l2).toFixed(0)}, position=(${k2.toFixed(0)}, ${_2.toFixed(0)})`);
     } catch (e3) {
       i.error(ge, "Failed to render image subtitle in overlay", e3);
     }
@@ -4640,10 +4663,10 @@ class CanvasRenderer {
     if (r2.image) return this.subtitleOverlay ? void this.renderImageSubtitleInOverlay(r2) : void 0;
     if (this.subtitleOverlay) {
       if (!r2.text) return this.subtitleOverlay.textContent = "", void (this.subtitleOverlay.style.display = "none");
-      const e3 = this.canvas instanceof HTMLCanvasElement ? this.canvas : null, s2 = e3?.getBoundingClientRect(), a2 = s2?.width || t2, n2 = s2?.height || i2, o2 = ((this.rotation ?? 0) % 360 + 360) % 360, h2 = 90 === o2 || 270 === o2, d2 = h2 ? n2 : a2, c2 = h2 ? a2 : n2, l2 = CanvasRenderer.computeSubtitleBottomPadding(c2);
+      const e3 = this.canvas instanceof HTMLCanvasElement ? this.canvas : null, s2 = e3?.getBoundingClientRect(), a2 = s2?.width || t2, n2 = s2?.height || i2, o2 = ((this.rotation ?? 0) % 360 + 360) % 360, h2 = 90 === o2 || 270 === o2, d2 = h2 ? n2 : a2, c2 = h2 ? a2 : n2, u2 = CanvasRenderer.computeSubtitleBottomPadding(c2);
       this.subtitleOverlay.style.position = "absolute", this.subtitleOverlay.style.right = "auto", this.subtitleOverlay.style.bottom = "auto", this.subtitleOverlay.style.width = `${d2}px`, this.subtitleOverlay.style.height = `${c2}px`, this.subtitleOverlay.style.left = (a2 - d2) / 2 + "px", this.subtitleOverlay.style.top = (n2 - c2) / 2 + "px", this.subtitleOverlay.style.margin = "0", this.subtitleOverlay.style.padding = "0";
-      const u2 = this.subtitleControlsPadding > 0 ? this.subtitleControlsPadding : l2;
-      this.subtitleOverlay.style.paddingBottom = `${u2}px`, this.subtitleOverlay.style.transformOrigin = "center center", this.subtitleOverlay.style.transform = o2 ? `rotate(${o2}deg)` : "none", this.subtitleOverlay.style.boxSizing = "border-box", this.subtitleOverlay.style.display = "flex", this.subtitleOverlay.style.flexDirection = "column", this.subtitleOverlay.style.justifyContent = "flex-end", this.subtitleOverlay.style.alignItems = "center", this.subtitleOverlay.style.textAlign = "left", this.subtitleOverlay.style.pointerEvents = "none";
+      const l2 = this.subtitleControlsPadding > 0 ? this.subtitleControlsPadding : u2;
+      this.subtitleOverlay.style.paddingBottom = `${l2}px`, this.subtitleOverlay.style.transformOrigin = "center center", this.subtitleOverlay.style.transform = o2 ? `rotate(${o2}deg)` : "none", this.subtitleOverlay.style.boxSizing = "border-box", this.subtitleOverlay.style.display = "flex", this.subtitleOverlay.style.flexDirection = "column", this.subtitleOverlay.style.justifyContent = "flex-end", this.subtitleOverlay.style.alignItems = "center", this.subtitleOverlay.style.textAlign = "left", this.subtitleOverlay.style.pointerEvents = "none";
       const f2 = `${r2.start.toFixed(3)}|${r2.text}`;
       if (f2 === this._lastRenderedSubtitleKey) return;
       this._lastRenderedSubtitleKey = f2;
@@ -4731,8 +4754,8 @@ class CanvasRenderer {
           }
           i4.push(e5.text), P2 += 1;
         }
-        const l3 = d3.join("").replace(/\s+$/, " "), u3 = c3.join(""), f3 = ['<div class="movi-subtitle-line">'];
-        return l3 && f3.push(`<span class="movi-subtitle-static">${l3}</span>`), u3 && f3.push(`<span class="movi-subtitle-new">${u3}</span>`), f3.push("</div>"), f3.join("");
+        const u3 = d3.join("").replace(/\s+$/, " "), l3 = c3.join(""), f3 = ['<div class="movi-subtitle-line">'];
+        return u3 && f3.push(`<span class="movi-subtitle-static">${u3}</span>`), l3 && f3.push(`<span class="movi-subtitle-new">${l3}</span>`), f3.push("</div>"), f3.join("");
       }).join(""), E2 = parseFloat(this.subtitleOverlay.style.width) || 0, F2 = E2 > 0 && T2 > 0 && T2 <= 0.92 * E2, D2 = F2 ? Math.max(0, Math.floor((E2 - T2) / 2)) : 0, B2 = F2 ? D2 > 0 ? ` style="padding-left:${D2}px"` : "" : ' style="text-align:center"';
       return void (this.subtitleOverlay.innerHTML = `<div class="movi-subtitle-anchor"${B2}><div class="movi-subtitle-block">${C2}</div></div>`);
     }
@@ -4787,7 +4810,7 @@ class CanvasRenderer {
 const pe = "Signalsmith";
 let be = null;
 function ve() {
-  return be || (be = K().then((e2) => (i.info(pe, "Signalsmith Stretch ready (shared movi WASM)"), e2)).catch((e2) => (i.warn(pe, "movi WASM not available — falling back", e2), be = null, null))), be;
+  return be || (be = G().then((e2) => (i.info(pe, "Signalsmith Stretch ready (shared movi WASM)"), e2)).catch((e2) => (i.warn(pe, "movi WASM not available — falling back", e2), be = null, null))), be;
 }
 class SignalsmithStretcher {
   mod;
@@ -5044,10 +5067,10 @@ class AudioRenderer {
       const e3 = this.firstBufferScheduledAt + (t2 - this.firstBufferMediaTime) / this._playbackRate, i2 = e3 - this.scheduledTime;
       Math.abs(i2) > 0.02 && (c2 = e3);
     }
-    const l2 = Math.max(c2, d2);
-    o2.start(l2), this.hasFirstBuffer || (this.firstBufferScheduledAt = l2, this.firstBufferMediaTime = t2, this.hasFirstBuffer = true, i.debug(Se, `First buffer scheduled at ${l2.toFixed(3)}s, mediaTime=${t2.toFixed(3)}s`)), this.activeSources.push(o2), this.scheduledTime = l2 + (n2 ? a2.duration : e2.duration / this._playbackRate), this.currentMediaTime = t2, this.scheduledCount++;
-    const u2 = t2 + e2.duration;
-    u2 > this.maxScheduledMediaTime && (this.maxScheduledMediaTime = u2), o2.onended = () => {
+    const u2 = Math.max(c2, d2);
+    o2.start(u2), this.hasFirstBuffer || (this.firstBufferScheduledAt = u2, this.firstBufferMediaTime = t2, this.hasFirstBuffer = true, i.debug(Se, `First buffer scheduled at ${u2.toFixed(3)}s, mediaTime=${t2.toFixed(3)}s`)), this.activeSources.push(o2), this.scheduledTime = u2 + (n2 ? a2.duration : e2.duration / this._playbackRate), this.currentMediaTime = t2, this.scheduledCount++;
+    const l2 = t2 + e2.duration;
+    l2 > this.maxScheduledMediaTime && (this.maxScheduledMediaTime = l2), o2.onended = () => {
       const e3 = this.activeSources.indexOf(o2);
       -1 !== e3 && this.activeSources.splice(e3, 1);
       try {
@@ -5098,12 +5121,12 @@ class AudioRenderer {
     const n2 = new Float32Array(2 * s2), o2 = e2.getChannelData(0), h2 = i2 > 1 ? e2.getChannelData(1) : o2;
     for (let e3 = 0; e3 < s2; e3++) n2[2 * e3] = o2[e3], n2[2 * e3 + 1] = h2[e3];
     a2.inputBuffer.putSamples(n2, 0, s2), a2.process();
-    const d2 = Math.ceil(s2 / t2), c2 = a2.outputBuffer.frameCount, l2 = Math.min(d2, c2);
-    if (0 === l2) return null;
-    const u2 = new Float32Array(2 * l2);
-    a2.outputBuffer.receiveSamples(u2, l2);
-    const f2 = this.audioContext.createBuffer(i2, l2, r2), m2 = f2.getChannelData(0), g2 = i2 > 1 ? f2.getChannelData(1) : null;
-    for (let e3 = 0; e3 < l2; e3++) m2[e3] = u2[2 * e3], g2 && (g2[e3] = u2[2 * e3 + 1]);
+    const d2 = Math.ceil(s2 / t2), c2 = a2.outputBuffer.frameCount, u2 = Math.min(d2, c2);
+    if (0 === u2) return null;
+    const l2 = new Float32Array(2 * u2);
+    a2.outputBuffer.receiveSamples(l2, u2);
+    const f2 = this.audioContext.createBuffer(i2, u2, r2), m2 = f2.getChannelData(0), g2 = i2 > 1 ? f2.getChannelData(1) : null;
+    for (let e3 = 0; e3 < u2; e3++) m2[e3] = l2[2 * e3], g2 && (g2[e3] = l2[2 * e3 + 1]);
     return f2;
   }
   warmupContext() {
@@ -5411,8 +5434,8 @@ class ThumbnailRenderer {
     this.hdrEnabled = o2, this.lastColorPrimaries = a2, this.lastColorTransfer = n2, this.rotation = s2;
     const h2 = s2 % 180 != 0;
     this.canvas.width = h2 ? r2 : t2, this.canvas.height = h2 ? t2 : r2, this.flatWidth = this.canvas.width, this.flatHeight = this.canvas.height;
-    const d2 = (a2 || "").toLowerCase(), c2 = (n2 || "").toLowerCase(), l2 = c2.includes("pq") || c2.includes("hlg") || c2.includes("smpte2084") || c2.includes("arib-std-b67"), u2 = d2.includes("bt2020") || d2.includes("rec2020");
-    this.isHDRSource = l2 || u2;
+    const d2 = (a2 || "").toLowerCase(), c2 = (n2 || "").toLowerCase(), u2 = c2.includes("pq") || c2.includes("hlg") || c2.includes("smpte2084") || c2.includes("arib-std-b67"), l2 = d2.includes("bt2020") || d2.includes("rec2020");
+    this.isHDRSource = u2 || l2;
     const f2 = this.detectHDRColorSpace(a2, n2);
     if (this.gl = this.canvas.getContext("webgl2", { alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true }), !this.gl) throw new Error("WebGL2 not supported");
     try {
@@ -5619,7 +5642,7 @@ function Re(e2) {
     return "[redacted-url]";
   }
 }
-const xe = "MoviPlayer", Pe = /* @__PURE__ */ new Set(["ttf", "otf", "ttc", "woff", "woff2"]);
+const xe = "MoviPlayer", Pe = /* @__PURE__ */ new Set(["ttf", "otf", "ttc", "woff", "woff2"]), Ce = /* @__PURE__ */ new Set();
 class MoviPlayer extends EventEmitter {
   static _isMobileDevice = (() => {
     if ("undefined" == typeof navigator) return false;
@@ -5674,6 +5697,11 @@ class MoviPlayer extends EventEmitter {
   _abrPenalizedBandwidth = 0;
   _abrPenaltyUntil = 0;
   static ABR_PENALTY_MS = 3e4;
+  static ABR_DECODE_PENALTY_MS = 12e4;
+  static ABR_PENALTY_MAX_MS = 3e5;
+  static ABR_STRIKE_DECAY_MS = 18e4;
+  _abrDrainStrikes = /* @__PURE__ */ new Map();
+  _videoHoldingForKeyframe = false;
   _lastSeekAt = Number.NEGATIVE_INFINITY;
   _blackFrameWatchdog = null;
   _blackRecoverySeeks = 0;
@@ -5743,6 +5771,9 @@ class MoviPlayer extends EventEmitter {
   seekingToKeyframe = false;
   seekingToKeyframeStartTime = 0;
   static KEYFRAME_SEEK_TIMEOUT = 5e3;
+  static SEEK_KEYFRAME_MIN_SCAN = 120;
+  static KEYFRAME_SEEK_HARD_TIMEOUT = 2e4;
+  seekKeyframeScanned = 0;
   seekCraSeen = 0;
   static SEEK_IDR_WAIT_MS = 400;
   videoChainBrokenUntilKeyframe = false;
@@ -5770,7 +5801,7 @@ class MoviPlayer extends EventEmitter {
     const r2 = "software" === t2.decoder;
     t2.canvas || "canvas" === t2.renderer ? t2.canvas ? (this.videoDecoder = new MoviVideoDecoder(r2), this.videoRenderer = new CanvasRenderer(t2.canvas), this.disableAudio ? (this.videoRenderer.setAudioTimeProvider(null, null), i.info(xe, "Video renderer running independently (audio disabled)")) : this.videoRenderer.setAudioTimeProvider(() => this.audioRenderer.getAudioClock(), () => this.audioRenderer.hasHealthyBuffer()), this.videoRenderer.setOnPerformanceDegrade(() => {
       this.videoDecoder?.setPerformanceSkip(true), this.abrDeviceDownshift();
-    }), i.info(xe, `Video renderer initialized with canvas (forceSoftware: ${r2})`)) : (i.warn(xe, "Canvas renderer requested but no canvas element provided"), this.videoDecoder = new MoviVideoDecoder(r2)) : (this.videoDecoder = new MoviVideoDecoder(r2), i.info(xe, "Video renderer initialized with default (WebCodecs decoder only)")), this.disableAudio ? (this.clock.setAudioProvider(null), i.info(xe, "Clock running independently (audio disabled)")) : this.clock.setAudioProvider(this.audioRenderer), this.videoDecoder && (this.videoDecoder.setOnFrame((e2) => {
+    }), this.videoRenderer.setShouldMeasurePerf(() => !(this.isBackgrounded && !this.isPiPActive)), i.info(xe, `Video renderer initialized with canvas (forceSoftware: ${r2})`)) : (i.warn(xe, "Canvas renderer requested but no canvas element provided"), this.videoDecoder = new MoviVideoDecoder(r2)) : (this.videoDecoder = new MoviVideoDecoder(r2), i.info(xe, "Video renderer initialized with default (WebCodecs decoder only)")), this.disableAudio ? (this.clock.setAudioProvider(null), i.info(xe, "Clock running independently (audio disabled)")) : this.clock.setAudioProvider(this.audioRenderer), this.videoDecoder && (this.videoDecoder.setOnFrame((e2) => {
       if (!document.hidden || this.isPiPActive) if (this.videoRenderer && ("playing" === this.stateManager.getState() || this.waitingForVideoSync)) {
         const t3 = e2.timestamp / 1e6;
         if (-1 !== this.seekTargetTime && t3 < this.seekTargetTime) return void e2.close();
@@ -5781,7 +5812,7 @@ class MoviPlayer extends EventEmitter {
       i.error(xe, "Video decoder error", e2), this.emit("error", e2);
     }), this.videoDecoder.onKeyframeWaitChange = (e2) => {
       const t3 = this.stateManager.getState();
-      "seeking" === t3 || this.waitingForVideoSync || e2 && "playing" === t3 && i.debug(xe, "Decoder waiting for keyframe mid-playback — staying in playing (audio/clock continue, video holds until next keyframe)");
+      this._videoHoldingForKeyframe = e2 && "playing" === t3, "seeking" === t3 || this.waitingForVideoSync || this._videoHoldingForKeyframe && i.debug(xe, "Decoder waiting for keyframe mid-playback — staying in playing (audio/clock continue, video holds until next keyframe)");
     }), this.audioDecoder.setOnData((e2) => this.renderDecodedAudio(e2)), this.audioDecoder.setOnPCM((e2) => {
       this.audioRenderer.renderPCM(e2);
     }), this.audioDecoder.setOnError((e2) => {
@@ -5843,10 +5874,10 @@ class MoviPlayer extends EventEmitter {
               return { media: r4, variants: s4 };
             }(s3, e5), o2 = n3.filter((e6) => e6.hasVideo), h2 = o2.length > 0 ? o2 : n3, d2 = h2.reduce((e6, t4) => t4.bandwidth > e6.bandwidth ? t4 : e6, h2[0]), c2 = r3 && h2.find((e6) => e6.url === r3) || d2;
             if (!c2) return i.warn(_, "master playlist has no usable variant"), null;
-            const l2 = await B(c2.url, t3);
-            if (!l2) return i.warn(_, "best variant media playlist unusable"), null;
-            const u2 = { ...l2 };
-            u2.selectedVariant = c2.url;
+            const u2 = await B(c2.url, t3);
+            if (!u2) return i.warn(_, "best variant media playlist unusable"), null;
+            const l2 = { ...u2 };
+            l2.selectedVariant = c2.url;
             const f2 = h2.filter((e6) => e6.audioGroup === c2.audioGroup), m2 = /* @__PURE__ */ new Map();
             for (const e6 of f2) m2.set(e6.height, (m2.get(e6.height) || 0) + 1);
             const g2 = /* @__PURE__ */ new Map();
@@ -5855,7 +5886,7 @@ class MoviPlayer extends EventEmitter {
               (!t4 || e6.bandwidth > t4.bandwidth) && g2.set(e6.height, e6);
             }
             const p2 = [...g2.values()].sort((e6, t4) => t4.height - e6.height || t4.bandwidth - e6.bandwidth);
-            if (p2.length > 1 && (u2.videoTracks = p2.map((e6) => ({ url: e6.url, id: e6.url, bandwidth: e6.bandwidth, label: e6.height ? `${e6.height}p` : `${Math.round(e6.bandwidth / 1e3)} kbps` }))), c2.audioGroup) {
+            if (p2.length > 1 && (l2.videoTracks = p2.map((e6) => ({ url: e6.url, id: e6.url, bandwidth: e6.bandwidth, label: e6.height ? `${e6.height}p` : `${Math.round(e6.bandwidth / 1e3)} kbps` }))), c2.audioGroup) {
               const e6 = a3.filter((e7) => "AUDIO" === e7.type && e7.groupId === c2.audioGroup && e7.uri), i2 = /* @__PURE__ */ new Map();
               for (const t4 of e6) {
                 const e7 = t4.language || "und", r5 = i2.get(e7);
@@ -5867,7 +5898,7 @@ class MoviPlayer extends EventEmitter {
                 const r5 = e7.language || "und";
                 return { ...i3, lang: r5, label: T(r5) || e7.name || "Audio", isDefault: e7.isDefault };
               }))).filter((e7) => !!e7);
-              r4.length > 0 && (u2.audioRenditions = r4);
+              r4.length > 0 && (l2.audioRenditions = r4);
             }
             if (c2.subtitlesGroup) {
               const e6 = a3.filter((e7) => "SUBTITLES" === e7.type && e7.groupId === c2.subtitlesGroup && e7.uri), i2 = /* @__PURE__ */ new Map();
@@ -5881,9 +5912,9 @@ class MoviPlayer extends EventEmitter {
                 const r5 = e7.language || "und";
                 return { lang: r5, label: T(r5) || e7.name || "Subtitle", segments: i3.segments, isDefault: e7.isDefault };
               }))).filter((e7) => !!e7);
-              r4.length > 0 && (u2.subtitleRenditions = r4);
+              r4.length > 0 && (l2.subtitleRenditions = r4);
             }
-            return i.info(_, `HLS fallback → ${u2.segments.length} ${u2.container} video segments, ${u2.totalDuration.toFixed(1)}s${u2.audioRenditions ? `, ${u2.audioRenditions.length} audio lang(s)` : " (muxed audio)"}${u2.subtitleRenditions ? `, ${u2.subtitleRenditions.length} subtitle(s)` : ""}${u2.isLive ? " (live snapshot)" : ""}`), u2;
+            return i.info(_, `HLS fallback → ${l2.segments.length} ${l2.container} video segments, ${l2.totalDuration.toFixed(1)}s${l2.audioRenditions ? `, ${l2.audioRenditions.length} audio lang(s)` : " (muxed audio)"}${l2.subtitleRenditions ? `, ${l2.subtitleRenditions.length} subtitle(s)` : ""}${l2.isLive ? " (live snapshot)" : ""}`), l2;
           } catch (e6) {
             return i.warn(_, "HLS fallback probe failed", e6), null;
           }
@@ -5905,7 +5936,7 @@ class MoviPlayer extends EventEmitter {
         i.warn(xe, "forceStreamDemux: HLS fallback probe failed", e4);
       }
       if (!this.source && this.config.forceStreamEngine && (e3 || a2)) try {
-        const e4 = this.config.forceStreamEngine, t3 = "hlsjs" === e4 ? new (await import("./HLSPlayerWrapper-DrElvoya.js")).HLSPlayerWrapper(this.config) : new (await import("./DASHPlayerWrapper-CvTnrh93.js")).DASHPlayerWrapper(this.config);
+        const e4 = this.config.forceStreamEngine, t3 = "hlsjs" === e4 ? new (await import("./HLSPlayerWrapper-MTqQQ6UU.js")).HLSPlayerWrapper(this.config) : new (await import("./DASHPlayerWrapper-DXdrsn-6.js")).DASHPlayerWrapper(this.config);
         return this.streamWrapper = t3, this.wireStreamWrapper(t3), i.info(xe, `forceStreamEngine: playing ${n2} via ${e4}`), await t3.load(), this.streamBackend = "hlsjs" === e4 ? "hls.js" : "dash.js", this.stateManager.setState("ready"), void this.publishProgrammaticState();
       } catch (e4) {
         i.warn(xe, `forceStreamEngine (${this.config.forceStreamEngine}) failed to load; falling through`, e4);
@@ -5916,7 +5947,7 @@ class MoviPlayer extends EventEmitter {
         this.streamWrapper = null;
       }
       if (!this.source) try {
-        const { ShakaPlayerWrapper: e4 } = await import("./ShakaPlayerWrapper-DFyZsKFp.js"), t3 = new e4(this.config);
+        const { ShakaPlayerWrapper: e4 } = await import("./ShakaPlayerWrapper-BVrG6zff.js"), t3 = new e4(this.config);
         return this.streamWrapper = t3, this.wireStreamWrapper(t3), i.info(xe, `Detected ${n2} stream, using ShakaPlayerWrapper`), await t3.load(), this.streamBackend = "shaka", this.stateManager.setState("ready"), void this.publishProgrammaticState();
       } catch (s3) {
         i.warn(xe, `Shaka failed on ${n2} stream`, s3);
@@ -5925,7 +5956,7 @@ class MoviPlayer extends EventEmitter {
         } catch {
         }
         if (this.streamWrapper = null, e3 || a2) try {
-          const t3 = e3 ? new (await import("./HLSPlayerWrapper-DrElvoya.js")).HLSPlayerWrapper(this.config) : new (await import("./DASHPlayerWrapper-CvTnrh93.js")).DASHPlayerWrapper(this.config);
+          const t3 = e3 ? new (await import("./HLSPlayerWrapper-MTqQQ6UU.js")).HLSPlayerWrapper(this.config) : new (await import("./DASHPlayerWrapper-DXdrsn-6.js")).DASHPlayerWrapper(this.config);
           return this.streamWrapper = t3, this.wireStreamWrapper(t3), i.info(xe, "Shaka failed; retrying with " + (e3 ? "hls.js" : "dash.js")), await t3.load(), this.streamBackend = e3 ? "hls.js" : "dash.js", this.stateManager.setState("ready"), i.info(xe, "Recovered via " + (e3 ? "hls.js" : "dash.js")), void this.publishProgrammaticState();
         } catch (t3) {
           i.warn(xe, (e3 ? "hls.js" : "dash.js") + " fallback also failed", t3);
@@ -6049,9 +6080,9 @@ class MoviPlayer extends EventEmitter {
       return false;
     }
     null !== this.animationFrameId && (cancelAnimationFrame(this.animationFrameId), this.animationFrameId = null), ++this.seekSessionId;
-    let l2 = 0;
-    for (; this.demuxInFlight && l2++ < 100; ) await new Promise((e3) => setTimeout(e3, 10));
-    const u2 = this.demuxer, f2 = this.source;
+    let u2 = 0;
+    for (; this.demuxInFlight && u2++ < 100; ) await new Promise((e3) => setTimeout(e3, 10));
+    const l2 = this.demuxer, f2 = this.source;
     this.demuxer = o2, this.source = n2, this.startTime = c2;
     try {
       this.fileSize = await n2.getSize();
@@ -6068,7 +6099,7 @@ class MoviPlayer extends EventEmitter {
     const g2 = o2.getExtradata(d2.id) ?? void 0;
     await this.videoDecoder.configure(d2, g2, this.config.frameRate ?? 0), this.videoRenderer?.configure(d2.width, d2.height, d2.colorPrimaries, d2.colorTransfer, this.config.frameRate || d2.frameRate, d2.rotation ?? 0, d2.isHDR, d2.pixelFormat), this.seekKeyframeOffset = 0, this.processLoop();
     try {
-      u2.close();
+      l2.close();
     } catch {
     }
     try {
@@ -6087,38 +6118,57 @@ class MoviPlayer extends EventEmitter {
     if (!this._autoQuality || this._abrSwitchInProgress || this._dashRenditions.length < 2 || !this.source || this.stateManager.is("seeking") || this.waitingForVideoSync) return;
     const e2 = this._dashRenditions.filter((e3) => (e3.bandwidth || 0) > 0).sort((e3, t3) => (t3.bandwidth || 0) - (e3.bandwidth || 0));
     if (e2.length < 2) return;
-    const t2 = e2.findIndex((e3) => e3.url === this._activeDashRendition), i2 = performance.now(), r2 = i2 - this._lastAbrSwitchAt, s2 = Math.max(0, this.getBufferedTime() - this.getCurrentTime()), a2 = this._lastBufferAhead > 0 && s2 < this._lastBufferAhead - 1.5;
-    this._lastBufferAhead = s2;
-    const n2 = i2 - this._lastSeekAt < 4e3;
-    if ((this.stateManager.is("buffering") || a2 && s2 < 10 || s2 < 4 && r2 > 12e3) && !n2 && r2 > 5e3 && t2 >= 0 && t2 < e2.length - 1) {
-      const r3 = this.source.getNetworkStats?.(), s3 = 8 * ((r3?.lastSpeed ?? r3?.currentSpeed ?? 0) || 0);
-      let a3 = e2[e2.length - 1];
-      for (let i3 = t2 + 1; i3 < e2.length; i3++) if ((e2[i3].bandwidth || 0) <= s3) {
-        a3 = e2[i3];
+    const t2 = e2.findIndex((e3) => e3.url === this._activeDashRendition), r2 = performance.now(), s2 = r2 - this._lastAbrSwitchAt;
+    if (t2 >= 0 && Ce.size > 0 && r2 - this._lastAbrSwitchAt > 3e3) {
+      const s3 = e2[t2];
+      if (null != s3.height && Ce.has(s3.height)) {
+        const t3 = e2.find((e3) => null == e3.height || !Ce.has(e3.height));
+        if (t3 && t3.url !== this._activeDashRendition) return i.info(xe, `ABR: started on decode-capped ${s3.height}p — correcting to ${t3.label || t3.bandwidth}`), void await this.abrCommit(t3.url, r2);
+      }
+    }
+    const a2 = Math.max(0, this.getBufferedTime() - this.getCurrentTime()), n2 = this._lastBufferAhead > 0 && a2 < this._lastBufferAhead - 1.5;
+    this._lastBufferAhead = a2;
+    const o2 = r2 - this._lastSeekAt < 4e3, h2 = this.stateManager.is("buffering"), d2 = s2 > 12e3 && r2 - this._lastSeekAt > 12e3, c2 = this._videoHoldingForKeyframe || !!this.videoDecoder?.isRecentlyRecovering?.();
+    if ((h2 || !c2 && (n2 && a2 < 6 || a2 < 4 && d2)) && !o2 && s2 > 5e3 && t2 >= 0 && t2 < e2.length - 1) {
+      const o3 = this.source.getNetworkStats?.(), d3 = 8 * ((o3?.lastSpeed ?? o3?.currentSpeed ?? 0) || 0), c3 = 8 * (o3?.currentSpeed || 0), u3 = e2[t2].bandwidth || 0;
+      if (!h2) {
+        if (c3 <= 0) return;
+        if (u3 > 0 && c3 >= 1.15 * u3) return;
+      }
+      let l3 = e2[e2.length - 1];
+      for (let i2 = t2 + 1; i2 < e2.length; i2++) if ((e2[i2].bandwidth || 0) <= d3) {
+        l3 = e2[i2];
         break;
       }
-      return this._abrPenalizedBandwidth = e2[t2].bandwidth || 0, this._abrPenaltyUntil = i2 + MoviPlayer.ABR_PENALTY_MS, void await this.abrCommit(a3.url, i2);
+      const f3 = e2[t2].bandwidth || 0, m3 = this._abrDrainStrikes.get(f3), g3 = (m3 && r2 - m3.at < MoviPlayer.ABR_STRIKE_DECAY_MS ? m3.count : 0) + 1;
+      return this._abrDrainStrikes.set(f3, { count: g3, at: r2 }), this._abrPenalizedBandwidth = f3, this._abrPenaltyUntil = Math.max(this._abrPenaltyUntil, r2 + Math.min(MoviPlayer.ABR_PENALTY_MS * 2 ** (g3 - 1), MoviPlayer.ABR_PENALTY_MAX_MS)), i.info(xe, `ABR downshift ${e2[t2].label || e2[t2].bandwidth} → ${l3.label || l3.bandwidth}: reason=${h2 ? "stall" : "bufferLow"}, bufferAhead=${a2.toFixed(1)}s, draining=${n2}, sinceSwitch=${(s2 / 1e3).toFixed(0)}s`), void await this.abrCommit(l3.url, r2);
     }
-    if (r2 < 12e3) return;
+    if (s2 < 12e3) return;
     if (this.isBackgrounded && !this.isPiPActive) return;
-    const o2 = this.source.getNetworkStats?.(), h2 = o2?.lastSpeed ?? o2?.currentSpeed ?? 0;
-    h2 > 0 && (this._lastThroughputBps = this._lastThroughputBps > 0 ? 0.7 * this._lastThroughputBps + 0.3 * h2 : h2);
-    const d2 = this._lastThroughputBps;
-    if (d2 <= 0) return void (t2 > 0 && await this.abrCommit(e2[t2 - 1].url, i2));
-    let c2 = 8 * d2 * 0.85;
-    i2 < this._abrPenaltyUntil && this._abrPenalizedBandwidth > 0 ? c2 = Math.min(c2, this._abrPenalizedBandwidth - 1) : 0 !== this._abrPenaltyUntil && i2 >= this._abrPenaltyUntil && (this._abrPenaltyUntil = 0, this._abrPenalizedBandwidth = 0);
-    let l2 = e2[e2.length - 1];
-    for (const t3 of e2) if ((t3.bandwidth || 0) <= c2) {
-      l2 = t3;
+    const u2 = this.source.getNetworkStats?.(), l2 = u2?.lastSpeed ?? u2?.currentSpeed ?? 0;
+    l2 > 0 && (this._lastThroughputBps = this._lastThroughputBps > 0 ? 0.7 * this._lastThroughputBps + 0.3 * l2 : l2);
+    const f2 = this._lastThroughputBps;
+    if (f2 <= 0) return void (t2 > 0 && await this.abrCommit(e2[t2 - 1].url, r2));
+    const m2 = 8 * f2;
+    let g2 = 0.85 * m2;
+    if (Ce.size > 0) {
+      let t3 = Number.POSITIVE_INFINITY;
+      for (const i2 of e2) null != i2.height && Ce.has(i2.height) && (t3 = Math.min(t3, i2.bandwidth || Number.POSITIVE_INFINITY));
+      t3 < Number.POSITIVE_INFINITY && (g2 = Math.min(g2, t3 - 1));
+    }
+    r2 < this._abrPenaltyUntil && this._abrPenalizedBandwidth > 0 ? g2 = Math.min(g2, this._abrPenalizedBandwidth - 1) : 0 !== this._abrPenaltyUntil && r2 >= this._abrPenaltyUntil && (this._abrPenaltyUntil = 0, this._abrPenalizedBandwidth = 0);
+    let p2 = e2[e2.length - 1];
+    for (const t3 of e2) if ((t3.bandwidth || 0) <= g2) {
+      p2 = t3;
       break;
     }
-    const u2 = e2.indexOf(l2);
-    if (t2 < 0) await this.abrCommit(l2.url, i2);
+    const b2 = e2.indexOf(p2);
+    if (t2 < 0) await this.abrCommit(p2.url, r2);
     else {
-      if (u2 < t2) {
-        this._abrUpCandidate === l2.url ? this._abrUpConfirms++ : (this._abrUpCandidate = l2.url, this._abrUpConfirms = 1);
-        const e3 = this._abrPrimed ? 2 : 1;
-        return void (this._abrUpConfirms >= e3 && await this.abrCommit(l2.url, i2));
+      if (b2 < t2) {
+        this._abrUpCandidate === p2.url ? this._abrUpConfirms++ : (this._abrUpCandidate = p2.url, this._abrUpConfirms = 1);
+        const s3 = this._abrPrimed ? 2 : 1;
+        return void (this._abrUpConfirms >= s3 && (i.info(xe, `ABR upshift ${e2[t2].label || e2[t2].bandwidth} → ${p2.label || p2.bandwidth}: throughput=${(m2 / 1e6).toFixed(1)}Mbps affordable, bufferAhead=${a2.toFixed(1)}s`), await this.abrCommit(p2.url, r2)));
       }
       this._abrUpCandidate = "", this._abrUpConfirms = 0;
     }
@@ -6143,8 +6193,10 @@ class MoviPlayer extends EventEmitter {
     if (t2 < 0 || t2 >= e2.length - 1) return;
     const r2 = performance.now();
     if (r2 - this._lastAbrSwitchAt < 3e3) return;
-    const s2 = e2[t2 + 1];
-    this._abrPenalizedBandwidth = e2[t2].bandwidth || 0, this._abrPenaltyUntil = r2 + MoviPlayer.ABR_PENALTY_MS, i.info(xe, `ABR: device decode-bound at ${e2[t2].label || e2[t2].bandwidth + "bps"} — dropping to ${s2.label || s2.bandwidth + "bps"} to relieve stutter`), this.abrCommit(s2.url, r2);
+    const s2 = e2[t2 + 1], a2 = e2[t2], n2 = a2.bandwidth || 0;
+    this._abrPenalizedBandwidth = n2;
+    const o2 = a2.height ?? 0, h2 = o2 > 0;
+    h2 && Ce.add(o2), this._abrPenaltyUntil = Math.max(this._abrPenaltyUntil, r2 + MoviPlayer.ABR_DECODE_PENALTY_MS), i.info(xe, `ABR: device decode-bound at ${a2.label || n2 + "bps"}${o2 ? " (" + o2 + "p)" : ""} — dropping to ${s2.label || s2.bandwidth + "bps"}${h2 ? ` and capping ${o2}p+ for this session` : " to relieve stutter"}`), this.abrCommit(s2.url, r2);
   }
   customSubtitleRendererFor(e2) {
     const t2 = this._customSubtitleRenderer;
@@ -6341,12 +6393,14 @@ class MoviPlayer extends EventEmitter {
       if (this._blackFrameWatchdog = null, this.seekSessionId !== t2) return;
       if ((this.videoRenderer?.getStats?.().framesPresented ?? 0) > r2) return void (this._blackRecoverySeeks = 0);
       const s2 = this.stateManager.getState();
-      if ("playing" !== s2 && "buffering" !== s2) return;
+      if ("playing" !== s2 && "buffering" !== s2 && "seeking" !== s2) return;
+      const a2 = Math.max(e2, this.clock.getTime());
+      if (this.getBufferedTime() - a2 < 0.5) return void this.armBlackFrameWatchdog(e2);
       if (this._blackRecoverySeeks >= MoviPlayer.MAX_BLACK_RECOVERY_SEEKS) return void i.warn(xe, "Black-frame recovery exhausted — no decodable frame after nudges");
       this._blackRecoverySeeks++;
-      const a2 = 2 + 4 * (this._blackRecoverySeeks - 1), n2 = this.getDuration() || 0, o2 = Math.max(e2, this.clock.getTime());
-      let h2 = o2 + a2;
-      n2 > 1 && h2 > n2 - 0.5 && (h2 = Math.max(0, n2 - 1)), i.info(xe, `Black-frame recovery #${this._blackRecoverySeeks}: no frame at ${o2.toFixed(1)}s — nudging to ${h2.toFixed(1)}s`), this.seek(h2);
+      const n2 = 2 + 4 * (this._blackRecoverySeeks - 1), o2 = this.getDuration() || 0, h2 = Math.max(e2, this.clock.getTime());
+      let d2 = h2 + n2;
+      o2 > 1 && d2 > o2 - 0.5 && (d2 = Math.max(0, o2 - 1)), i.info(xe, `Black-frame recovery #${this._blackRecoverySeeks}: no frame at ${h2.toFixed(1)}s — nudging to ${d2.toFixed(1)}s`), this.seek(d2);
     }, 2500);
   }
   notifySeekCompletion(e2, t2 = false) {
@@ -6456,8 +6510,11 @@ class MoviPlayer extends EventEmitter {
       const e3 = this.audioRenderer.getAudioClock(), t3 = this.videoRenderer ? this.videoRenderer.currentTime ?? -1 : -1;
       if (e3 >= 0 && t3 > 0) {
         const r3 = t3 - e3, s3 = performance.now() - this._lastDesyncSeekTime;
-        r3 > 0.5 && s3 > 5e3 && this.audioRenderer.getMaxScheduledMediaTime() < t3 - 0.1 && (i.warn(xe, `Audio desync detected: video=${t3.toFixed(2)}s, audio=${e3.toFixed(2)}s, behind=${(1e3 * r3).toFixed(0)}ms — resyncing`), this._lastDesyncSeekTime = performance.now(), this.seek(this.getCurrentTime()).catch(() => {
-        }));
+        if (r3 > 0.5 && s3 > 5e3 && this.audioRenderer.getMaxScheduledMediaTime() < t3 - 0.1) {
+          const s4 = Math.max(t3, this.getCurrentTime());
+          i.warn(xe, `Audio desync detected: video=${t3.toFixed(2)}s, audio=${e3.toFixed(2)}s, behind=${(1e3 * r3).toFixed(0)}ms — pulling audio forward to ${s4.toFixed(2)}s`), this._lastDesyncSeekTime = performance.now(), this.seek(s4).catch(() => {
+          });
+        }
       }
     }
     if (this.demuxInFlight) {
@@ -6474,25 +6531,25 @@ class MoviPlayer extends EventEmitter {
       } else if (r3) return void this.handleEnded();
       return;
     }
-    const d2 = this.isSoftwareDecoding(), c2 = performance.now() - this.seekTime, l2 = this.justSeeked && c2 < MoviPlayer.POST_SEEK_THROTTLE_MS, u2 = this.disableAudio ? 0 : this.audioRenderer.getBufferedDuration(), f2 = this.videoRenderer?.getQueueSize() ?? 0, m2 = d2 ? 1e3 : l2 || this.waitingForVideoSync ? 60 : 30, g2 = d2 ? 500 : l2 || this.waitingForVideoSync ? 40 : 20, p2 = Math.max(0.25, this.clock.getPlaybackRate()), b2 = p2 < 1 ? 1 / p2 : Math.min(2, p2), v2 = (d2 ? 5 : l2 ? 1.5 : 2) * b2, S2 = this.trackManager.getActiveVideoTrack(), y2 = (S2?.width ?? 0) * (S2?.height ?? 0), w2 = Math.max(15, Math.min(120, S2?.frameRate ?? 30)), k2 = y2 >= 33177600, _2 = y2 >= 8294400, T2 = MoviPlayer._isMobileDevice;
+    const d2 = this.isSoftwareDecoding(), c2 = performance.now() - this.seekTime, u2 = this.justSeeked && c2 < MoviPlayer.POST_SEEK_THROTTLE_MS, l2 = this.disableAudio ? 0 : this.audioRenderer.getBufferedDuration(), f2 = this.videoRenderer?.getQueueSize() ?? 0, m2 = d2 ? 1e3 : u2 || this.waitingForVideoSync ? 60 : 30, g2 = d2 ? 500 : u2 || this.waitingForVideoSync ? 40 : 20, p2 = Math.max(0.25, this.clock.getPlaybackRate()), b2 = p2 < 1 ? 1 / p2 : Math.min(2, p2), v2 = (d2 ? 5 : u2 ? 1.5 : 2) * b2, S2 = this.trackManager.getActiveVideoTrack(), y2 = (S2?.width ?? 0) * (S2?.height ?? 0), w2 = Math.max(15, Math.min(120, S2?.frameRate ?? 30)), k2 = y2 >= 33177600, _2 = y2 >= 8294400, T2 = MoviPlayer._isMobileDevice;
     let A2;
-    if (k2) A2 = T2 ? l2 ? 8 : 12 : l2 ? 12 : 16;
-    else if (_2) A2 = T2 ? l2 ? 8 : 16 : l2 ? 24 : 48;
+    if (k2) A2 = T2 ? u2 ? 8 : 12 : u2 ? 12 : 16;
+    else if (_2) A2 = T2 ? u2 ? 8 : 16 : u2 ? 24 : 48;
     else if (T2) {
-      const e3 = l2 ? 400 : 800;
+      const e3 = u2 ? 400 : 800;
       A2 = Math.max(12, Math.round(w2 * e3 / 1e3));
-    } else A2 = l2 ? 20 : 100;
+    } else A2 = u2 ? 20 : 100;
     const R2 = Math.round((d2 ? 60 : A2) * b2), x2 = this.isBackgrounded && !this.isPiPActive || "buffering" === e2;
     this.videoDecoder.queueSize > m2 && 0 === f2 ? this._decoderStuckSince ? performance.now() - this._decoderStuckSince > 5e3 && (i.warn(xe, `Video decoder stuck for 5s (queue=${this.videoDecoder.queueSize}, output=0), flushing`), this.videoDecoder.flush().catch(() => {
     }), this._decoderStuckSince = 0) : this._decoderStuckSince = performance.now() : this._decoderStuckSince = 0;
-    const P2 = Math.abs(p2 - 1) > 0.01, C2 = !this.disableAudio && u2 < 0.1, E2 = this.videoDecoder.queueSize > m2, F2 = !x2 && f2 > R2, D2 = P2 && !this.muted && (F2 || E2) && C2, B2 = !this.disableAudio && !this.audioDemuxer;
-    if (!x2 && !D2 && this.videoDecoder.queueSize > m2 || B2 && this.audioDecoder.queueSize > g2 || B2 && u2 > v2 || !x2 && !D2 && f2 > R2) this.waitingForVideoSync && (this.videoDecoder.queueSize > m2 || f2 > R2) && i.debug(xe, `Backpressure during sync: videoDecoder=${this.videoDecoder.queueSize}, videoBuffered=${f2}`);
+    const P2 = Math.abs(p2 - 1) > 0.01, C2 = !this.disableAudio && l2 < 0.1, E2 = this.videoDecoder.queueSize > m2, F2 = !x2 && f2 > R2, D2 = P2 && !this.muted && (F2 || E2) && C2, B2 = !this.disableAudio && !this.audioDemuxer;
+    if (!x2 && !D2 && this.videoDecoder.queueSize > m2 || B2 && this.audioDecoder.queueSize > g2 || B2 && l2 > v2 || !x2 && !D2 && f2 > R2) this.waitingForVideoSync && (this.videoDecoder.queueSize > m2 || f2 > R2) && i.debug(xe, `Backpressure during sync: videoDecoder=${this.videoDecoder.queueSize}, videoBuffered=${f2}`);
     else try {
       if (this.seekSessionId !== t2) return void i.debug(xe, "ProcessLoop aborted before demux: new seek started");
       this.demuxInFlight = true, this.demuxInFlightStartTime = performance.now();
       const e3 = this.trackManager?.getActiveVideoTrack()?.frameRate ?? 30, r3 = Math.max(1, Math.ceil(e3 / 30));
       let s3 = 20 * r3;
-      if (l2) s3 = 5 * r3, !this.disableAudio && !!this.trackManager?.getActiveAudioTrack() && u2 < 1 && (s3 = 160 * r3), i.debug(xe, `Post-seek throttling: using burst size ${s3}`);
+      if (u2) s3 = 5 * r3, !this.disableAudio && !!this.trackManager?.getActiveAudioTrack() && l2 < 1 && (s3 = 160 * r3), i.debug(xe, `Post-seek throttling: using burst size ${s3}`);
       else {
         this.justSeeked && c2 >= MoviPlayer.POST_SEEK_THROTTLE_MS && (this.justSeeked = false, i.debug(xe, "Post-seek throttle period ended"));
         const t3 = this.videoRenderer?.getQueueSize() ?? 0, a4 = this.audioRenderer.getBufferedDuration(), n4 = !this.disableAudio && this.audioDecoder.usesSoftware;
@@ -6502,10 +6559,10 @@ class MoviPlayer extends EventEmitter {
       this.videoDecoder.isWaitingForKeyframe && (s3 = Math.min(s3, 5));
       for (let e4 = 0; e4 < s3 && !(!a3 && this.videoRenderer && this.videoRenderer.getQueueSize() > n3); e4++) {
         if (!D2 && this.videoDecoder.queueSize > m2 || !this.disableAudio && this.audioDecoder.queueSize > g2) {
-          l2 && i.debug(xe, `Post-seek: queue full (video: ${this.videoDecoder.queueSize}, audio: ${this.audioDecoder.queueSize}), pausing burst`);
+          u2 && i.debug(xe, `Post-seek: queue full (video: ${this.videoDecoder.queueSize}, audio: ${this.audioDecoder.queueSize}), pausing burst`);
           break;
         }
-        if (e4 > 0 && e4 % (l2 ? 2 * r3 : d2 ? 3 : 20 * r3) == 0) {
+        if (e4 > 0 && e4 % (u2 ? 2 * r3 : d2 ? 3 : 20 * r3) == 0) {
           const e5 = new MessageChannel();
           if (await new Promise((t3) => {
             e5.port1.onmessage = t3, e5.port2.postMessage(null);
@@ -6532,8 +6589,10 @@ class MoviPlayer extends EventEmitter {
               this.videoChainBrokenUntilKeyframe = false;
             }
             if (this.seekingToKeyframe) {
-              const e6 = performance.now() - this.seekingToKeyframeStartTime, t4 = e6 > MoviPlayer.SEEK_IDR_WAIT_MS, r4 = s4.keyframe && -1 !== this.seekTargetTime && s4.timestamp <= this.seekTargetTime + 0.05, a4 = s4.keyframe && (s4.isIdr || t4 || r4);
-              if (e6 > MoviPlayer.KEYFRAME_SEEK_TIMEOUT) i.warn(xe, `Keyframe seek timeout after ${e6}ms, accepting any frame`), this.seekingToKeyframe = false;
+              const e6 = performance.now() - this.seekingToKeyframeStartTime;
+              this.seekKeyframeScanned++;
+              const t4 = e6 > MoviPlayer.SEEK_IDR_WAIT_MS, r4 = s4.keyframe && -1 !== this.seekTargetTime && s4.timestamp <= this.seekTargetTime + 0.05, a4 = s4.keyframe && (s4.isIdr || t4 || r4), n4 = this.seekKeyframeScanned < MoviPlayer.SEEK_KEYFRAME_MIN_SCAN;
+              if (e6 > (n4 ? MoviPlayer.KEYFRAME_SEEK_HARD_TIMEOUT : MoviPlayer.KEYFRAME_SEEK_TIMEOUT)) i.warn(xe, `Keyframe seek timeout after ${e6.toFixed(0)}ms (scanned=${this.seekKeyframeScanned}, starved=${n4}), accepting any frame`), this.seekingToKeyframe = false;
               else {
                 if (!a4) {
                   s4.keyframe && this.seekCraSeen++;
@@ -6571,7 +6630,7 @@ class MoviPlayer extends EventEmitter {
     } catch (e3) {
       i.error(xe, "Demux error", e3);
       const t3 = e3.message || "", r3 = /out of bounds memory access|memory access out of bounds|RuntimeError|Aborted\(\)/i.test(t3), s3 = r3 || t3.includes("Invalid packet size") || t3.includes("Invalid typed array length") || t3.includes("State may be corrupted"), a3 = /^HTTP \d{3}/.test(t3) || t3.includes("Access denied") || t3.includes("Authentication required") || t3.includes("Video not found") || t3.includes("Failed to fetch video resource") || t3.includes("Stream failed after") || t3.includes("Server does not support range requests");
-      if (r3 && G(), s3 || a3) return i.error(xe, a3 ? `Fatal source error, pausing playback: ${t3}` : "Fatal demux error detected, pausing playback"), this.pause(), this.stateManager.setState("error"), void this.emit("error", a3 ? e3 instanceof Error ? e3 : new Error(t3) : new Error("Playback error: corrupt data stream"));
+      if (r3 && K(), s3 || a3) return i.error(xe, a3 ? `Fatal source error, pausing playback: ${t3}` : "Fatal demux error detected, pausing playback"), this.pause(), this.stateManager.setState("error"), void this.emit("error", a3 ? e3 instanceof Error ? e3 : new Error(t3) : new Error("Playback error: corrupt data stream"));
     } finally {
       if (this.demuxInFlight = false, this._audioBatchPending.length > 0) {
         const e3 = this._audioBatchPending;
@@ -6623,7 +6682,7 @@ class MoviPlayer extends EventEmitter {
     if (!this.demuxer) throw new Error("Demuxer not initialized");
     this.stopPauseBuffering(), "seeking" === r2 || this.wasPlayingBeforeSeek || (this.wasPlayingBeforeSeek = "playing" === r2 || "buffering" === r2 && this.wasPlayingBeforeRebuffer), this.clock.pause(), this.seekKeyframeOffset = 0;
     const s2 = ++this.seekSessionId;
-    this._lastSeekAt = performance.now(), this.stateManager.setState("seeking"), this.emit("seeking", e2), null !== this.animationFrameId && (cancelAnimationFrame(this.animationFrameId), this.animationFrameId = null);
+    this._lastSeekAt = performance.now(), this.stateManager.setState("seeking"), this.emit("seeking", e2), this.bufferedRangeStart = e2, null !== this.animationFrameId && (cancelAnimationFrame(this.animationFrameId), this.animationFrameId = null);
     try {
       if (this.demuxInFlight) {
         let e3 = 0;
@@ -6649,7 +6708,7 @@ class MoviPlayer extends EventEmitter {
         }
         this._splitAudioEof = false, this._lastSplitAudioPts = e2;
       }
-      i.info(xe, "seek: demuxer.seek done"), this.clock.seek(e2 + this.startTime), this.eofReached = false, this.eofSince = 0, this.lastBufferedTime = 0, this.bufferedRangeStart = e2, this.seekingToKeyframe = true, this.seekingToKeyframeStartTime = performance.now(), this.seekCraSeen = 0, this.videoChainBrokenUntilKeyframe = false, this.seekTargetTime = e2 + this.startTime, this.waitingForVideoSync = true, this.seekArmedSessionId = s2, this.pendingAudioPackets = [], this.pendingPrebufferPackets = [];
+      i.info(xe, "seek: demuxer.seek done"), this.clock.seek(e2 + this.startTime), this.eofReached = false, this.eofSince = 0, this.lastBufferedTime = 0, this.bufferedRangeStart = e2, this.seekingToKeyframe = true, this.seekingToKeyframeStartTime = performance.now(), this.seekKeyframeScanned = 0, this.seekCraSeen = 0, this.videoChainBrokenUntilKeyframe = false, this.seekTargetTime = e2 + this.startTime, this.waitingForVideoSync = true, this.seekArmedSessionId = s2, this.pendingAudioPackets = [], this.pendingPrebufferPackets = [];
       const t3 = this.isSeekTargetBuffered(e2);
       if (t3 ? (this.justSeeked = false, i.info(xe, "Seek within buffered range — skipping post-seek throttle")) : this.justSeeked = true, this.seekTime = performance.now(), this.seekSessionId !== s2) return;
       i.info(xe, `seek: starting processLoop, waitingForVideoSync=${this.waitingForVideoSync}, state=${this.stateManager.getState()}`), this.processLoop(), this.startAudioLoop(), this.videoRenderer && this.videoRenderer.startPresentationLoop();
@@ -7154,7 +7213,13 @@ class MoviPlayer extends EventEmitter {
       if (a2 && this.audioDecoder.setBindings(a2), !await this.audioDecoder.configure(r2, s2)) return i.warn(xe, "Split audio: decoder configure failed"), this.audioDemuxer = null, void (this.audioSource = null);
       await this.audioRenderer.init();
       const n2 = r2.channels ?? 2, o2 = this.audioRenderer.getMaxChannelCount();
-      n2 > 2 && o2 >= n2 ? (this.audioDecoder.setDownmix(false), this.audioRenderer.setOutputChannelCount(n2)) : (this.audioDecoder.setDownmix(true), this.audioRenderer.setOutputChannelCount(2)), this._splitAudioEof = false, this._lastSplitAudioPts = 0, i.info(xe, `Split audio (WASM) ready: ${r2.codec} ${r2.sampleRate}Hz ${r2.channels}ch`);
+      n2 > 2 && o2 >= n2 ? (this.audioDecoder.setDownmix(false), this.audioRenderer.setOutputChannelCount(n2)) : (this.audioDecoder.setDownmix(true), this.audioRenderer.setOutputChannelCount(2)), this._splitAudioEof = false, this._lastSplitAudioPts = 0;
+      const h2 = this.getCurrentTime();
+      if (h2 > 0.5) try {
+        await this.audioDemuxer.seek(h2 + this._splitAudioStartTime), i.info(xe, `Split audio synced to playhead ${h2.toFixed(1)}s after setup`);
+      } catch {
+      }
+      i.info(xe, `Split audio (WASM) ready: ${r2.codec} ${r2.sampleRate}Hz ${r2.channels}ch`);
     } catch (e3) {
       i.error(xe, `Split audio setup failed: ${e3?.message ?? e3}`), this.audioDemuxer = null, this.audioSource = null;
     }
@@ -7309,10 +7374,10 @@ class MoviPlayer extends EventEmitter {
       }
       this.nativeAudioEl = null, this.revokeNativeAudioObjectUrl(), this._nativeAudioLogicalUrl = null;
     }
-    const c2 = this.audioDemuxer, l2 = this.audioSource;
+    const c2 = this.audioDemuxer, u2 = this.audioSource;
     this.audioDemuxer = o2, this.audioSource = n2, this._splitAudioTrackId = a2.id, this._splitAudioStartTime = h2, this._splitAudioPtsDelta = (this.mediaInfo?.startTime || 0) - h2;
-    const u2 = o2.getBindings();
-    u2 && this.audioDecoder.setBindings(u2);
+    const l2 = o2.getBindings();
+    l2 && this.audioDecoder.setBindings(l2);
     const f2 = o2.getExtradata(a2.id) ?? void 0;
     if (await this.audioDecoder.flush(), await this.audioDecoder.configure(a2, f2)) {
       const e3 = a2.channels ?? 2, t3 = this.audioRenderer.getMaxChannelCount();
@@ -7323,8 +7388,8 @@ class MoviPlayer extends EventEmitter {
       c2?.close();
     } catch {
     }
-    if (l2 && l2 !== n2) try {
-      l2.close();
+    if (u2 && u2 !== n2) try {
+      u2.close();
     } catch {
     }
     return i.info(xe, `Audio switched in-place (WASM) to: ${t2.label} (${t2.lang})`), this.emit("audioTrackChange", { lang: e2, label: t2.label }), true;
@@ -7702,7 +7767,7 @@ class MoviPlayer extends EventEmitter {
         try {
           if (this.videoDecoder && await this.videoDecoder.flush(), this.videoRenderer && this.videoRenderer.clearQueue(), this.seekSessionId !== a2) return;
           if (this.eofReached = false, this.eofSince = 0, this.demuxer && await this.demuxer.seek(s2 + this.startTime), this.seekSessionId !== a2) return;
-          this.clock.seek(s2 + this.startTime), this.seekTargetTime = Math.max(s2 + this.startTime, r2), this.seekingToKeyframe = true, this.seekingToKeyframeStartTime = performance.now(), this.seekCraSeen = 0, this.videoChainBrokenUntilKeyframe = false, this.videoRenderer && this.videoRenderer.startPresentationLoop(), this.processLoop();
+          this.clock.seek(s2 + this.startTime), this.seekTargetTime = Math.max(s2 + this.startTime, r2), this.seekingToKeyframe = true, this.seekingToKeyframeStartTime = performance.now(), this.seekKeyframeScanned = 0, this.seekCraSeen = 0, this.videoChainBrokenUntilKeyframe = false, this.videoRenderer && this.videoRenderer.startPresentationLoop(), this.processLoop();
         } catch (e5) {
           i.error(xe, "Foreground recovery failed", e5), this.processLoop();
         }
@@ -7869,15 +7934,15 @@ class MoviPlayer extends EventEmitter {
     }
   }
 }
-const Ce = "0.3.5-kmp.2", Ee = "2.0.0";
+const Ee = "0.3.5-kmp.3", Fe = "2.0.0";
 export {
   CanvasRenderer as C,
   EventEmitter as E,
   i as L,
-  Ee as M,
+  Fe as M,
   TrackManager as T,
   e as a,
-  Ce as b,
+  Ee as b,
   MoviError as c,
   MoviPlayer as d,
   Re as e,
