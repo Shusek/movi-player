@@ -1,4 +1,8 @@
 .DS_Store
+.gradle/
+.kotlin/
+build/
+**/build/
 node_modules/
 dist/
 old/
@@ -17,6 +21,11 @@ test-media/
 *.zip
 *.mp4
 *.webm
+
+kotlin-js-store/*
+!kotlin-js-store/wasm/
+kotlin-js-store/wasm/*
+!kotlin-js-store/wasm/yarn.lock
 
 !docs/images/*.mp4
 !docs/images/*.webp
