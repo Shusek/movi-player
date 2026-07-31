@@ -823,19 +823,31 @@ private suspend fun awaitBrowserAnimationFrames(count: Int) {
 
 private suspend fun awaitPlayerDiagnostics(
     player: WasmMediaPlayer,
-    maximumAnimationFrames: Int = 1_200,
+    timeoutMilliseconds: Int = 20_000,
     predicate: (RenderingDiagnostics) -> Boolean,
 ): RenderingDiagnostics {
     var diagnostics = player.diagnostics.value
-    var remaining = maximumAnimationFrames
-    while (remaining > 0 && !predicate(diagnostics)) {
-        val batch = minOf(12, remaining)
-        awaitBrowserAnimationFrames(batch)
-        remaining -= batch
+    val deadline = browserPerformanceMilliseconds() + timeoutMilliseconds
+    while (browserPerformanceMilliseconds() < deadline && !predicate(diagnostics)) {
+        awaitBrowserTimeout(50)
         diagnostics = player.diagnostics.value
     }
     return diagnostics
 }
+
+private suspend fun awaitBrowserTimeout(milliseconds: Int) {
+    val completed = kotlinx.coroutines.CompletableDeferred<Unit>()
+    scheduleBrowserTimeout(milliseconds) { completed.complete(Unit) }
+    completed.await()
+}
+
+@Suppress("UNUSED_PARAMETER")
+private fun scheduleBrowserTimeout(
+    milliseconds: Int,
+    onComplete: () -> Unit,
+): Unit = js("globalThis.setTimeout(onComplete, milliseconds)")
+
+private fun browserPerformanceMilliseconds(): Double = js("performance.now()")
 
 @Suppress("UNUSED_PARAMETER")
 private fun scheduleBrowserAnimationFrames(
