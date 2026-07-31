@@ -1993,7 +1993,17 @@ internal class DemuxedPlaybackBackend(
     private suspend fun restartAtCurrentPosition() {
         val resume = playing
         seek(currentPosition)
-        if (!resume) pause()
+        if (!resume) {
+            if (firstPlayPending) {
+                // Decoder recovery may happen while READY preroll probes an
+                // optimistic WebCodecs configuration. The pipeline is already
+                // paused by seek(), but this is not a user pause and must not
+                // turn the pre-play session into PAUSED.
+                observer.onState(WasmMediaPlayerState.READY)
+            } else {
+                pause()
+            }
+        }
     }
 
     private fun applyStreamDiscard() {
