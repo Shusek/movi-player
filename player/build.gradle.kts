@@ -1,6 +1,7 @@
 @file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 
 import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
     alias(libs.plugins.multiplatform)
@@ -16,6 +17,11 @@ kotlin {
         outputModuleName.set("kmedia-wasm-engine")
         browser {
             testTask {
+                testLogging {
+                    exceptionFormat = TestExceptionFormat.FULL
+                    showCauses = true
+                    showStackTraces = true
+                }
                 val macOsFirefox = file("/Applications/Firefox.app/Contents/MacOS/firefox")
                 if (wasmTestBrowser.get().equals("firefox", ignoreCase = true) && macOsFirefox.isFile) {
                     environment("FIREFOX_BIN", macOsFirefox.absolutePath)
