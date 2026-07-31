@@ -373,19 +373,30 @@ class NativeFixtureTest {
                 player.load(MediaSource.Url(fixtureUrl("av1-opus.mkv"), mimeType = "video/x-matroska"))
                 // Let READY preroll consume this short fixture completely. The
                 // first play must rewind the demuxer instead of inheriting the
-                // probe/preroll cursor at EOF.
-                awaitBrowserAnimationFrames(60)
+                // probe/preroll cursor at EOF. Waiting for the observable EOF
+                // state keeps this regression test independent of runner speed:
+                // software AV1 decode is substantially slower on headless CI.
+                val prerollDiagnostics =
+                    awaitPlayerDiagnostics(player) { diagnostics -> diagnostics.endOfInput }
+                assertTrue(
+                    prerollDiagnostics.endOfInput,
+                    "AV1 preroll did not reach end of input: $prerollDiagnostics",
+                )
                 assertEquals(WasmMediaPlayerState.READY, player.state.value)
                 val presentedBeforePlay = player.diagnostics.value.presentedFrames
                 player.play()
-                awaitBrowserAnimationFrames(240)
-
-                val diagnostics = player.diagnostics.value
+                val diagnostics =
+                    awaitPlayerDiagnostics(player) { current ->
+                        current.presentedFrames > presentedBeforePlay
+                    }
                 assertTrue(
                     diagnostics.presentedFrames > presentedBeforePlay,
                     "AV1 fisheye playback did not present a frame: $diagnostics",
                 )
-                assertTrue(canvas.width > 1 && canvas.height > 1)
+                assertTrue(
+                    canvas.width > 1 && canvas.height > 1,
+                    "AV1 fisheye renderer kept an empty ${canvas.width}x${canvas.height} canvas.",
+                )
             } finally {
                 player.close()
                 canvas.remove()
@@ -808,6 +819,22 @@ private suspend fun awaitBrowserAnimationFrames(count: Int) {
     val completed = kotlinx.coroutines.CompletableDeferred<Unit>()
     scheduleBrowserAnimationFrames(count) { completed.complete(Unit) }
     completed.await()
+}
+
+private suspend fun awaitPlayerDiagnostics(
+    player: WasmMediaPlayer,
+    maximumAnimationFrames: Int = 1_200,
+    predicate: (RenderingDiagnostics) -> Boolean,
+): RenderingDiagnostics {
+    var diagnostics = player.diagnostics.value
+    var remaining = maximumAnimationFrames
+    while (remaining > 0 && !predicate(diagnostics)) {
+        val batch = minOf(12, remaining)
+        awaitBrowserAnimationFrames(batch)
+        remaining -= batch
+        diagnostics = player.diagnostics.value
+    }
+    return diagnostics
 }
 
 @Suppress("UNUSED_PARAMETER")
