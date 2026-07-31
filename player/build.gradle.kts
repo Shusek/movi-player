@@ -47,6 +47,7 @@ kotlin {
         wasmJsTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
+            implementation(devNpm("playwright", "1.62.1"))
         }
     }
 }

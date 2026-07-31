@@ -3,6 +3,7 @@ const path = require("path");
 const kotlinAssets = path.resolve(config.basePath, "kotlin");
 const configuredBrowsers = config.browsers || [];
 const browserLaunchers = { ...(config.customLaunchers || {}) };
+let playwrightWebKitPlugin = null;
 if (configuredBrowsers.includes("ChromeHeadless")) {
     browserLaunchers.KMediaWasmChromeHeadless = {
         base: "Chrome",
@@ -17,6 +18,45 @@ if (configuredBrowsers.includes("ChromeHeadless")) {
             "--use-angle=swiftshader",
         ],
     };
+}
+if (configuredBrowsers.includes("Safari")) {
+    const PlaywrightWebKitBrowser = function(baseBrowserDecorator, logger) {
+        baseBrowserDecorator(this);
+        const log = logger.create("PlaywrightWebKitLauncher");
+        let browser = null;
+
+        this._start = function(url) {
+            const launcher = this;
+            const { webkit } = require("playwright");
+            webkit.launch({ headless: true })
+                .then(instance => {
+                    browser = instance;
+                    return instance.newPage();
+                })
+                .then(page => page.goto(url))
+                .catch(error => {
+                    log.error(`Cannot start Playwright WebKit: ${error && error.stack || error}`);
+                    launcher._done("cannot start");
+                });
+        };
+
+        this.on("kill", function(done) {
+            const active = browser;
+            browser = null;
+            Promise.resolve(active && active.close())
+                .catch(() => {})
+                .then(() => done());
+        });
+    };
+    PlaywrightWebKitBrowser.prototype = { name: "PlaywrightWebKit" };
+    PlaywrightWebKitBrowser.$inject = ["baseBrowserDecorator", "logger"];
+    playwrightWebKitPlugin = {
+        "launcher:KMediaWasmWebKit": ["type", PlaywrightWebKitBrowser],
+    };
+}
+if (playwrightWebKitPlugin) {
+    config.plugins = config.plugins || [];
+    config.plugins.push(playwrightWebKitPlugin);
 }
 config.set({
     files: (config.files || []).concat([
@@ -51,6 +91,10 @@ config.set({
     },
     customLaunchers: browserLaunchers,
     browsers: configuredBrowsers.map(browser =>
-        browser === "ChromeHeadless" ? "KMediaWasmChromeHeadless" : browser
+        browser === "ChromeHeadless"
+            ? "KMediaWasmChromeHeadless"
+            : browser === "Safari"
+                ? "KMediaWasmWebKit"
+                : browser
     ),
 });
