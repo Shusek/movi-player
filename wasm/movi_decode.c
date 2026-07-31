@@ -1,6 +1,12 @@
 #include "movi.h"
 #include <libavutil/imgutils.h>
 
+static int64_t movi_seconds_to_timestamp(double seconds, AVRational time_base) {
+  int64_t microseconds =
+      (int64_t)(seconds * AV_TIME_BASE + (seconds >= 0.0 ? 0.5 : -0.5));
+  return av_rescale_q(microseconds, AV_TIME_BASE_Q, time_base);
+}
+
 EMSCRIPTEN_KEEPALIVE
 int movi_enable_decoder(MoviContext *ctx, int stream_index,
                         uint8_t *extradata, int extradata_size) {
@@ -65,9 +71,9 @@ int movi_send_packet(MoviContext *ctx, int stream_index, uint8_t *data,
   }
   AVRational tb = ctx->fmt_ctx->streams[stream_index]->time_base;
   if (pts >= 0)
-    pkt->pts = (int64_t)(pts / av_q2d(tb));
+    pkt->pts = movi_seconds_to_timestamp(pts, tb);
   if (dts >= 0)
-    pkt->dts = (int64_t)(dts / av_q2d(tb));
+    pkt->dts = movi_seconds_to_timestamp(dts, tb);
   if (keyframe)
     pkt->flags |= AV_PKT_FLAG_KEY;
   int ret = avcodec_send_packet(dec, pkt);
@@ -534,7 +540,7 @@ int movi_decode_subtitle(MoviContext *ctx, int stream_index, uint8_t *data,
   AVRational tb = ctx->fmt_ctx->streams[stream_index]->time_base;
   int64_t packet_pts = AV_NOPTS_VALUE;
   if (pts != 0) {
-    packet_pts = (int64_t)(pts / av_q2d(tb));
+    packet_pts = movi_seconds_to_timestamp(pts, tb);
     pkt->pts = packet_pts;
     pkt->dts = packet_pts;
   } else {
@@ -543,7 +549,7 @@ int movi_decode_subtitle(MoviContext *ctx, int stream_index, uint8_t *data,
   }
 
   if (duration > 0) {
-    pkt->duration = (int64_t)(duration / av_q2d(tb));
+    pkt->duration = movi_seconds_to_timestamp(duration, tb);
     ctx->last_subtitle_packet_duration = duration;
   } else {
     pkt->duration = 0;
@@ -1039,16 +1045,20 @@ EMSCRIPTEN_KEEPALIVE
 double movi_get_frame_pts(MoviContext *ctx, int stream_index) {
   if (!ctx || !ctx->frame) return -1.0;
   if (stream_index < 0 || stream_index >= ctx->fmt_ctx->nb_streams) return -1.0;
-  
+
   AVStream *stream = ctx->fmt_ctx->streams[stream_index];
-  if (ctx->frame->pts == AV_NOPTS_VALUE) {
-    if (ctx->frame->pkt_dts != AV_NOPTS_VALUE) {
-        return ctx->frame->pkt_dts * av_q2d(stream->time_base);
-    }
+  // best_effort_timestamp is libavcodec's presentation-order timestamp after
+  // codec reordering. It is specifically safer than frame->pts for streams
+  // with missing packet PTS (notably MPEG-4 Part 2 B-frames in AVI).
+  int64_t timestamp = ctx->frame->best_effort_timestamp;
+  if (timestamp == AV_NOPTS_VALUE)
+    timestamp = ctx->frame->pts;
+  if (timestamp == AV_NOPTS_VALUE)
+    timestamp = ctx->frame->pkt_dts;
+  if (timestamp == AV_NOPTS_VALUE)
     return -1.0;
-  }
-  
-  return ctx->frame->pts * av_q2d(stream->time_base);
+
+  return timestamp * av_q2d(stream->time_base);
 }
 
 EMSCRIPTEN_KEEPALIVE

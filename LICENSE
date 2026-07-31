@@ -241,8 +241,8 @@ Project: https://signalsmith-audio.co.uk/code/stretch/
 FFmpeg
 ------
 
-Location: dist/wasm/ (compiled to WebAssembly and statically linked into the
-movi WASM module; build recipe in docker/build-ffmpeg.sh and docker/Dockerfile)
+Location: cdn/chunks/movi.wasm in the runtime artifact (built first under
+dist/wasm/; build recipe in docker/build-ffmpeg.sh and docker/Dockerfile)
 
 Copyright (c) the FFmpeg developers
 
@@ -308,8 +308,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Emscripten
 ----------
 
-Location: dist/wasm/movi.js and dist/wasm/movi.wasm (generated runtime and
-WebAssembly support code)
+Location: cdn/chunks/movi.js and cdn/chunks/movi.wasm in the runtime artifact
+(generated first under dist/wasm/)
 
 Copyright (c) 2010-2014 Emscripten authors, see AUTHORS file.
 
@@ -368,7 +368,7 @@ Project: https://github.com/emscripten-core/emscripten
 musl libc (Emscripten system library)
 --------------------------------------
 
-Location: portions linked into dist/wasm/movi.wasm by Emscripten
+Location: portions linked into cdn/chunks/movi.wasm by Emscripten
 
 Copyright (c) 2005-2020 Rich Felker, et al.
 

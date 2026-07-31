@@ -1,12 +1,12 @@
 name: Performance Issue
-description: Report performance or memory issues with Movi-Player
+description: Report performance or memory issues with KMedia Wasm Engine
 title: "[Performance]: "
 labels: ["performance", "triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a performance issue! Performance is critical for movi-player. Please provide as much detail as possible.
+        Thanks for reporting a performance issue! Performance is critical for kmedia-wasm-engine. Please provide as much detail as possible.
 
   - type: textarea
     id: description
@@ -195,11 +195,11 @@ body:
       required: false
 
   - type: input
-    id: movi-version
+    id: engine-version
     attributes:
-      label: Movi-Player Version
-      description: Which version of movi-player?
-      placeholder: "e.g., 0.1.5-beta.1"
+      label: KMedia Wasm Engine Version
+      description: Which version of kmedia-wasm-engine?
+      placeholder: "e.g., 0.4.0-alpha.2"
     validations:
       required: true
 
@@ -258,7 +258,7 @@ body:
       options:
         - label: I have searched existing issues and this is not a duplicate
           required: true
-        - label: I have tested with the latest version of movi-player
+        - label: I have tested with the latest version of kmedia-wasm-engine
           required: false
         - label: I have checked DevTools Performance/Memory tabs
           required: false

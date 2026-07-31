@@ -1,0 +1,12 @@
+;FFMETADATA1
+title=Fixture title
+[CHAPTER]
+TIMEBASE=1/1000
+START=0
+END=700
+title=Intro
+[CHAPTER]
+TIMEBASE=1/1000
+START=700
+END=1500
+title=Main

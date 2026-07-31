@@ -1,5 +1,5 @@
-Movi Player — KMediaPlayer integration fork
-============================================
+KMedia Wasm Engine
+==================
 
 Original project:
   Copyright 2026 Ujjawal Kashyap
@@ -7,7 +7,7 @@ Original project:
 
 Fork modifications:
   Copyright 2026 KMediaPlayer contributors
-  https://github.com/Shusek/movi-player
+  https://github.com/Shusek/kmedia-wasm-engine
 
 The project and fork modifications are distributed under Apache License 2.0.
 The complete license text and third-party notices are in LICENSE.
@@ -17,8 +17,8 @@ dav1d (BSD-2-Clause), Emscripten, musl libc, Signalsmith Stretch (MIT), zlib,
 Shaka Player (Apache-2.0), hls.js (Apache-2.0), and dash.js (BSD-3-Clause).
 These components remain under their respective licenses.
 
-For the FFmpeg/WebAssembly component, the package includes the wrapper source
-and build recipe under wasm/, docker/, and compose.yaml. Exact upstream source
-versions are pinned by docker/Dockerfile. The repository tag matching the npm
-package version is the corresponding source snapshot and can rebuild/relink
-the WebAssembly artifact. See LGPL_RELINKING.md.
+For the FFmpeg/WebAssembly component, the corresponding source contains the
+wrapper and build recipe under wasm/, docker/, and compose.yaml. Exact upstream
+source versions are pinned by docker/Dockerfile. The repository tag matching
+the Maven artifact version is the corresponding source snapshot and can
+rebuild/relink the WebAssembly artifact. See LGPL_RELINKING.md.

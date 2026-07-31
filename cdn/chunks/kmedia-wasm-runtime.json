@@ -1,0 +1,17 @@
+{
+  "abiVersion": 4,
+  "wasmSha256": "71e695690f6a75b67cd4bbd0110747a5a1795dcddb63be2a4c0cb333bbd74967",
+  "features": [
+    "demux",
+    "software-video-rgba-yuv",
+    "vc1-software-decode",
+    "wmv3-wmav2-software-decode",
+    "wmapro-software-decode",
+    "wasm-simd128",
+    "software-audio-planar-batch",
+    "subtitle-text-bitmap",
+    "decoder-flush-skip",
+    "thumbnail",
+    "signalsmith-stretch"
+  ]
+}

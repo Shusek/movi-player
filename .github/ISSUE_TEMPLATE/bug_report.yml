@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug or issue with Movi-Player
+description: Report a bug or issue with KMedia Wasm Engine
 title: "[Bug]: "
 labels: ["bug", "triage"]
 body:
@@ -87,11 +87,11 @@ body:
       required: true
 
   - type: input
-    id: movi-version
+    id: engine-version
     attributes:
-      label: Movi-Player Version
-      description: Which version of movi-player are you using?
-      placeholder: "e.g., 0.1.5-beta.1"
+      label: KMedia Wasm Engine Version
+      description: Which version of kmedia-wasm-engine are you using?
+      placeholder: "e.g., 0.4.0-alpha.2"
     validations:
       required: true
 
@@ -99,11 +99,11 @@ body:
     id: module
     attributes:
       label: Module
-      description: Which movi-player module are you using?
+      description: Which published artifact are you using?
       options:
-        - Full Element (movi-player)
-        - Player (movi-player/player)
-        - Demuxer (movi-player/demuxer)
+        - Kotlin/Wasm engine KLIB
+        - Runtime assets ZIP
+        - Composite build
     validations:
       required: true
 
@@ -193,7 +193,7 @@ body:
       options:
         - label: I have searched existing issues and this is not a duplicate
           required: true
-        - label: I am using the latest version of movi-player
+        - label: I am using the latest version of kmedia-wasm-engine
           required: false
         - label: I have checked the browser console for errors
           required: false

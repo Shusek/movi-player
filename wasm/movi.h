@@ -56,6 +56,11 @@ typedef struct {
   //   1 = equirectangular, 2 = cubemap, 3 = equirectangular-tile,
   //   4 = half-equirectangular (180°), …
   int projection;
+  // FFmpeg represents embedded cover art as a synthetic video stream with
+  // AV_DISPOSITION_ATTACHED_PIC. Keeping this in StreamInfo lets Kotlin omit
+  // it from normal playback while extracting its packet in an isolated
+  // demuxer context.
+  int is_attached_picture;
 } StreamInfo;
 
 // Packet info struct
