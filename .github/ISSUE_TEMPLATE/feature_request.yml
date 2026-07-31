@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest a new feature or enhancement for Movi-Player
+description: Suggest a new feature or enhancement for KMedia Wasm Engine
 title: "[Feature]: "
 labels: ["enhancement", "triage"]
 body:
@@ -51,10 +51,10 @@ body:
       description: Select all that apply
       multiple: true
       options:
-        - Demuxer (movi-player/demuxer)
-        - Player (movi-player/player)
-        - Element/UI (movi-player)
-        - All modules
+        - Kotlin/Wasm engine KLIB
+        - Runtime assets
+        - FFmpeg-Wasm runtime
+        - Adaptive browser backend
         - Documentation
         - Build/Development tools
     validations:
@@ -64,7 +64,7 @@ body:
     id: breaking-change
     attributes:
       label: Would This Be a Breaking Change?
-      description: Would this require changes to existing code using movi-player?
+      description: Would this require changes to existing code using kmedia-wasm-engine?
       options:
         - "No"
         - "Yes"
@@ -145,5 +145,5 @@ body:
           required: true
         - label: I have checked the documentation and this feature doesn't already exist
           required: false
-        - label: This feature aligns with movi-player's goals (web video playback)
+        - label: This feature aligns with kmedia-wasm-engine's goals (web video playback)
           required: false

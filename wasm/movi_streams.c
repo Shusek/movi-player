@@ -79,6 +79,8 @@ int movi_get_stream_info(MoviContext *ctx, int stream_index, StreamInfo *info) {
   }
   info->bit_rate = codecpar->bit_rate;
   info->extradata_size = codecpar->extradata_size;
+  info->is_attached_picture =
+      (stream->disposition & AV_DISPOSITION_ATTACHED_PIC) != 0;
   if (stream->duration != AV_NOPTS_VALUE)
     info->duration = stream->duration * av_q2d(stream->time_base);
   else if (ctx->fmt_ctx->duration != AV_NOPTS_VALUE)

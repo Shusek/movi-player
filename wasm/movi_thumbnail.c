@@ -150,7 +150,7 @@ int movi_thumbnail_open(struct MoviThumbnailContext *ctx) {
     return -4;
   }
   ctx->fmt_ctx->pb = ctx->avio_ctx;
-
+  ctx->fmt_ctx->flags |= AVFMT_FLAG_GENPTS;
 
   if (avformat_open_input(&ctx->fmt_ctx, NULL, NULL, NULL) < 0)
     return -5;

@@ -1,5 +1,5 @@
-Movi Player — KMediaPlayer integration fork
-============================================
+KMedia Wasm Engine
+==================
 
 Original project:
   Copyright 2026 Ujjawal Kashyap
@@ -7,7 +7,7 @@ Original project:
 
 Fork modifications:
   Copyright 2026 KMediaPlayer contributors
-  https://github.com/Shusek/movi-player
+  https://github.com/Shusek/kmedia-wasm-engine
 
 The project and fork modifications are distributed under Apache License 2.0.
 The complete license text and third-party notices are in LICENSE.

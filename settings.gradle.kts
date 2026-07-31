@@ -66,7 +66,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "movi-player"
+rootProject.name = "kmedia-wasm-engine"
 
 include(":player")
 include(":runtime-assets")

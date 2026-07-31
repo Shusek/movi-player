@@ -1,11 +1,11 @@
 blank_issues_enabled: true
 contact_links:
   - name: 📚 Documentation
-    url: https://mrujjwalg.github.io/movi-player/
+    url: https://Shusek.github.io/kmedia-wasm-engine/
     about: Check the comprehensive documentation for guides and API reference
   - name: 💬 GitHub Discussions
-    url: https://github.com/mrujjwalg/movi-player/discussions
+    url: https://github.com/Shusek/kmedia-wasm-engine/discussions
     about: Ask questions and discuss ideas with the community
   - name: 🔒 Security Vulnerability
-    url: https://github.com/mrujjwalg/movi-player/security/advisories/new
+    url: https://github.com/Shusek/kmedia-wasm-engine/security/advisories/new
     about: Report security vulnerabilities privately through GitHub Security Advisories

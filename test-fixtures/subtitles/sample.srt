@@ -1,0 +1,7 @@
+1
+00:00:00,100 --> 00:00:00,700
+Kotlin/Wasm subtitle
+
+2
+00:00:00,750 --> 00:00:01,400
+Seek and replay cue

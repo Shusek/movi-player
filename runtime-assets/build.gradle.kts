@@ -1,5 +1,6 @@
 import org.gradle.api.tasks.bundling.Zip
 import java.security.MessageDigest
+import java.util.zip.ZipFile
 
 plugins {
     base
@@ -9,12 +10,12 @@ plugins {
 
 val runtimeArchive =
     tasks.register<Zip>("runtimeArchive") {
-        archiveBaseName.set("movi-player-runtime-assets")
+        archiveBaseName.set("kmedia-wasm-engine-runtime-assets")
         archiveVersion.set(project.version.toString())
         destinationDirectory.set(layout.buildDirectory.dir("distributions"))
         from(rootProject.layout.projectDirectory.dir("cdn/chunks")) {
-            include("movi.js", "movi.wasm")
-            into("movi-runtime")
+            include("kmedia-wasm.js", "kmedia-wasm.wasm", "kmedia-wasm-runtime.json")
+            into("kmedia-wasm-runtime")
         }
         from(rootProject.layout.projectDirectory) {
             include("LICENSE", "NOTICE", "LGPL_RELINKING.md")
@@ -33,8 +34,9 @@ val verifyRuntimeAssets =
         val runtimeDirectory = rootProject.layout.projectDirectory.dir("cdn")
         inputs.file(checksumFile)
         inputs.files(
-            runtimeDirectory.file("chunks/movi.js"),
-            runtimeDirectory.file("chunks/movi.wasm"),
+            runtimeDirectory.file("chunks/kmedia-wasm.js"),
+            runtimeDirectory.file("chunks/kmedia-wasm.wasm"),
+            runtimeDirectory.file("chunks/kmedia-wasm-runtime.json"),
         )
         doLast {
             val expected =
@@ -44,7 +46,7 @@ val verifyRuntimeAssets =
                         val columns = line.trim().split(Regex("\\s+"), limit = 2)
                         if (columns.size == 2) columns[1] to columns[0].lowercase() else null
                     }.toMap()
-            listOf("chunks/movi.js", "chunks/movi.wasm").forEach { relativePath ->
+            listOf("chunks/kmedia-wasm.js", "chunks/kmedia-wasm.wasm", "chunks/kmedia-wasm-runtime.json").forEach { relativePath ->
                 val file = runtimeDirectory.file(relativePath).asFile
                 val digest =
                     MessageDigest
@@ -55,11 +57,61 @@ val verifyRuntimeAssets =
                     "Checksum mismatch for $relativePath."
                 }
             }
+            val manifest = runtimeDirectory.file("chunks/kmedia-wasm-runtime.json").asFile.readText()
+            check(Regex("\"abiVersion\"\\s*:\\s*4").containsMatchIn(manifest)) {
+                "The runtime manifest must declare ABI 4."
+            }
+            val declaredWasmChecksum =
+                Regex("\"wasmSha256\"\\s*:\\s*\"([0-9a-f]{64})\"")
+                    .find(manifest)
+                    ?.groupValues
+                    ?.get(1)
+            check(declaredWasmChecksum == expected["chunks/kmedia-wasm.wasm"]) {
+                "The runtime manifest does not describe the packaged Wasm checksum."
+            }
+            val loader = runtimeDirectory.file("chunks/kmedia-wasm.js").asFile.readText()
+            check("createKMediaWasmModule" in loader) {
+                "The runtime loader does not export createKMediaWasmModule."
+            }
         }
     }
 
 runtimeArchive.configure {
     dependsOn(verifyRuntimeAssets)
+}
+
+val verifyRuntimeArchive =
+    tasks.register("verifyRuntimeArchive") {
+        group = "verification"
+        description = "Verifies ABI 4 runtime ZIP completeness and rejects retired runtime names."
+        dependsOn(runtimeArchive)
+        val archive = runtimeArchive.flatMap { it.archiveFile }
+        inputs.file(archive)
+        doLast {
+            ZipFile(archive.get().asFile).use { zip ->
+                val entries = zip.entries().asSequence().filterNot { it.isDirectory }.map { it.name }.toSet()
+                val required =
+                    setOf(
+                        "kmedia-wasm-runtime/kmedia-wasm.js",
+                        "kmedia-wasm-runtime/kmedia-wasm.wasm",
+                        "kmedia-wasm-runtime/kmedia-wasm-runtime.json",
+                        "META-INF/LICENSE",
+                        "META-INF/NOTICE",
+                        "META-INF/LGPL_RELINKING.md",
+                        "META-INF/SHA256SUMS",
+                    )
+                check(entries == required) {
+                    "Unexpected runtime ZIP entries: missing=${required - entries}, extra=${entries - required}"
+                }
+                check(entries.none { it.endsWith("/movi.js") || it.endsWith("/movi.wasm") }) {
+                    "Retired runtime filenames must not be published."
+                }
+            }
+        }
+    }
+
+tasks.named("check") {
+    dependsOn(verifyRuntimeArchive)
 }
 
 configurations.named("default") {
@@ -69,12 +121,12 @@ configurations.named("default") {
 publishing {
     publications {
         create<MavenPublication>("runtimeAssets") {
-            artifactId = "movi-player-runtime-assets"
+            artifactId = "kmedia-wasm-engine-runtime-assets"
             artifact(runtimeArchive)
             pom {
-                name.set("Movi Player runtime assets")
+                name.set("KMedia Wasm Engine runtime assets")
                 description.set("Pinned Emscripten glue and native media WebAssembly runtime.")
-                url.set("https://github.com/Shusek/movi-player")
+                url.set("https://github.com/Shusek/kmedia-wasm-engine")
                 inceptionYear.set("2026")
                 licenses {
                     license {
@@ -90,9 +142,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:https://github.com/Shusek/movi-player.git")
-                    developerConnection.set("scm:git:ssh://git@github.com/Shusek/movi-player.git")
-                    url.set("https://github.com/Shusek/movi-player")
+                    connection.set("scm:git:https://github.com/Shusek/kmedia-wasm-engine.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/Shusek/kmedia-wasm-engine.git")
+                    url.set("https://github.com/Shusek/kmedia-wasm-engine")
                 }
             }
         }

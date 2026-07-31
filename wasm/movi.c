@@ -251,6 +251,18 @@ int movi_open(MoviContext *ctx) {
   int ret = avformat_open_input(&ctx->fmt_ctx, NULL, NULL, NULL);
   if (ret < 0)
     return ret;
+
+  // AVI commonly omits packet PTS for the reference pictures which surround
+  // MPEG-4 Part 2 B-frames. Falling back to DTS makes decoded AVFrame PTS
+  // regress (for example 0.25 -> 0.00), and a timestamp-sorted renderer then
+  // visibly presents an older picture after a newer one. Restrict GENPTS to
+  // AVI: enabling it before probing every format can make a very large MP4
+  // read far ahead while generating timestamps, leaving its first playback
+  // pump at the tail of the file.
+  if (ctx->fmt_ctx->iformat && ctx->fmt_ctx->iformat->name &&
+      strstr(ctx->fmt_ctx->iformat->name, "avi") != NULL) {
+    ctx->fmt_ctx->flags |= AVFMT_FLAG_GENPTS;
+  }
   
   // Try to find stream info, but don't fail hard if it returns error (e.g. no PTS found)
   // This allows playing files where probing failed but streams might be usable
