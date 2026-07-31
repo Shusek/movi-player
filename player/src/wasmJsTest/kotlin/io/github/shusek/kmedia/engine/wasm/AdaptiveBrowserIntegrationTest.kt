@@ -1,4 +1,7 @@
-@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+@file:OptIn(
+    kotlinx.coroutines.ExperimentalCoroutinesApi::class,
+    kotlin.js.ExperimentalWasmJsInterop::class,
+)
 
 package io.github.shusek.kmedia.engine.wasm
 
@@ -13,6 +16,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.w3c.dom.HTMLVideoElement
+import kotlin.js.ExperimentalWasmJsInterop
+import kotlin.js.js
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -29,8 +34,8 @@ class AdaptiveBrowserIntegrationTest {
             document.body?.appendChild(canvas)
             val adapter =
                 RecordingBrowserMediaSourceAdapter(
-                    url = "/base/kotlin/media/h264-aac.mp4",
-                    mimeType = "video/mp4",
+                    url = "/base/kotlin/media/vp8-vorbis.webm",
+                    mimeType = "video/webm",
                 )
             val player = WasmMediaPlayer(config)
             try {
@@ -53,13 +58,13 @@ class AdaptiveBrowserIntegrationTest {
         runTest(timeout = 60.seconds) {
             val first =
                 RecordingBrowserMediaSourceAdapter(
-                    url = "/base/kotlin/media/h264-aac.mp4",
-                    mimeType = "video/mp4",
+                    url = "/base/kotlin/media/vp8-vorbis.webm",
+                    mimeType = "video/webm",
                 )
             val second =
                 RecordingBrowserMediaSourceAdapter(
-                    url = "/base/kotlin/media/h264-aac.mp4",
-                    mimeType = "video/mp4",
+                    url = "/base/kotlin/media/vp8-vorbis.webm",
+                    mimeType = "video/webm",
                 )
             val player = WasmMediaPlayer(WasmMediaPlayerConfig())
             player.load(MediaSource.BrowserMedia(first))
@@ -155,7 +160,13 @@ class AdaptiveBrowserIntegrationTest {
         runTest(timeout = 60.seconds) {
             listOf(
                 "/base/kotlin/media/vod.m3u8" to "application/vnd.apple.mpegurl",
-                "/base/kotlin/media/vod.mpd" to "application/dash+xml",
+                (
+                    if (browserSupportsH264Mse()) {
+                        "/base/kotlin/media/vod.mpd"
+                    } else {
+                        "/base/kotlin/media/single-file.mpd"
+                    }
+                ) to "application/dash+xml",
             ).forEach { (url, mimeType) ->
                 val config =
                     WasmMediaPlayerConfig(
@@ -211,7 +222,7 @@ class AdaptiveBrowserIntegrationTest {
                     }
                 assertTrue(window.end > window.start)
                 assertEquals(window.end, window.liveEdge)
-                player.seekToLive()
+                if (browserSupportsH264Mse()) player.seekToLive()
                 assertEquals(window, player.diagnostics.value.liveWindow)
             } finally {
                 player.close()
@@ -219,6 +230,16 @@ class AdaptiveBrowserIntegrationTest {
             }
         }
 }
+
+@OptIn(ExperimentalWasmJsInterop::class)
+private fun browserSupportsH264Mse(): Boolean =
+    js(
+        """
+        typeof MediaSource === "function" &&
+            typeof MediaSource.isTypeSupported === "function" &&
+            MediaSource.isTypeSupported('video/mp4; codecs="avc1.42c00a, mp4a.40.2"')
+        """,
+    )
 
 private class RecordingBrowserMediaSourceAdapter(
     override val url: String,

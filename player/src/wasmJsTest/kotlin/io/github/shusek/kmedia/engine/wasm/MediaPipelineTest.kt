@@ -258,7 +258,15 @@ class MediaPipelineTest {
                 setMediaPipelineColor(pipeline, sourceHdr = true, toneMapping = "shader")
                 awaitAnimationFrames(2)
                 val toneMapped = readPipelinePixels(pipeline).toByteArray().toList()
-                assertTrue(sdr != toneMapped, "PQ/BT.2020 tone mapping did not alter output pixels.")
+                if (mediaPipelineUsesWebGl(pipeline)) {
+                    assertTrue(sdr != toneMapped, "PQ/BT.2020 tone mapping did not alter output pixels.")
+                } else {
+                    assertEquals(
+                        sdr,
+                        toneMapped,
+                        "Canvas2D fallback unexpectedly applied a shader-only tone mapping path.",
+                    )
+                }
 
                 assertEquals(
                     1.0,

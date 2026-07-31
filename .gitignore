@@ -23,6 +23,10 @@ test-media/
 *.webm
 !test-fixtures/media/h264-aac.mp4
 !test-fixtures/media/hls-byterange.mp4
+!test-fixtures/media/dash-init-0.mp4
+!test-fixtures/media/dash-init-1.mp4
+!test-fixtures/media/hevc-open-gop.mp4
+!test-fixtures/media/vp8-vorbis.webm
 
 kotlin-js-store/*
 !kotlin-js-store/wasm/

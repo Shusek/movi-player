@@ -1634,6 +1634,7 @@ private fun createVideoBridge(
                                 const details = data && data.details;
                                 const duration = Number(details && details.totalduration);
                                 if (Number.isFinite(duration) && duration > 0) reportReady(duration);
+                                reportLive(engine);
                             });
                         }
                         engine.on(Hls.Events.LEVEL_SWITCHED, function(_, data) {
