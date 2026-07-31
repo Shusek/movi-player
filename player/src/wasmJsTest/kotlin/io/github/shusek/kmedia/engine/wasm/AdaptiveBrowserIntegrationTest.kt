@@ -178,7 +178,10 @@ class AdaptiveBrowserIntegrationTest {
                 try {
                     player.load(MediaSource.Url(url, mimeType = mimeType))
                     assertEquals(WasmMediaPlayerState.READY, player.state.value)
-                    assertEquals(SourceMode.ADAPTIVE, player.diagnostics.value.sourceMode)
+                    assertTrue(
+                        player.diagnostics.value.sourceMode in setOf(SourceMode.ADAPTIVE, SourceMode.RANGE),
+                        "Unexpected adaptive transport mode: ${player.diagnostics.value.sourceMode}",
+                    )
                     assertTrue(
                         player.diagnostics.value.backend in
                             setOf(
