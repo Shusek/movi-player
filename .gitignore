@@ -21,6 +21,8 @@ test-media/
 *.zip
 *.mp4
 *.webm
+!test-fixtures/media/h264-aac.mp4
+!test-fixtures/media/hls-byterange.mp4
 
 kotlin-js-store/*
 !kotlin-js-store/wasm/
